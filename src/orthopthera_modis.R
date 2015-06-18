@@ -28,8 +28,8 @@ save(orthoptera, file = "processed/orthoptera.rda")
 # load("processed/orthoptera.rda")  
 plotid <- orthoptera$plot
 observations <- orthoptera[, col_species]
-prevalent_species <- meanOccupancy(plotid, observations, 
-                                   resample = 100, thv = 20)
+prevalent_species <- minimumOccurence(plotid, observations, 
+                                      resample = 100, thv = 20)
 save(prevalent_species, file = "processed/prevalent_species.rda")
 
 
@@ -39,8 +39,8 @@ save(prevalent_species, file = "processed/prevalent_species.rda")
 # load("processed/orthoptera.rda")
 # load("processed/prevalent_species.rda")
 orthoptera_cplt <- orthoptera[, c(col_meta, 
-                           which(colnames(orthoptera) %in% prevalent_species),
-                           col_modis)]
+                                  which(colnames(orthoptera) %in% prevalent_species),
+                                  col_modis)]
 summary(orthoptera_cplt)
 orthoptera_cplt <- 
   orthoptera_cplt[, -(which(colnames(orthoptera_cplt) == "greyval_band_11") : 
@@ -62,8 +62,9 @@ for(i in seq(14, 34)){
   orthoptera_cplt[, i] <- as.factor(temp)
 }
 
-orthoptera_mdl <- conditionalSample(orthoptera_cplt[, -(2:13)], orthoptera_cplt$plot, 
-                               resample = 100)
+orthoptera_mdl <- conditionalSampleByVariable(orthoptera_cplt[, -(2:13)], 
+                                              selector = orthoptera_cplt$plot, 
+                                              resample = 100)
 save(orthoptera_cplt, file = "processed/orthoptera_mdl.rda")
 
 
@@ -72,7 +73,7 @@ save(orthoptera_cplt, file = "processed/orthoptera_mdl.rda")
 # Split dataset into testing and training samples for each individual species --
 # load(""processed/orthoptera_mdl.rda")
 col_response <- seq(2,22)
-orthoptera_mdl_trte <- splitByFrequency(orthoptera_mdl, col_response)
+orthoptera_mdl_trte <- splitMultResp(orthoptera_mdl, col_response)
 save(orthoptera_mdl_trte, file = "processed/orthoptera_mdl_trte.rda")
 
 
@@ -84,57 +85,9 @@ response <- 2
 independent <- seq(3, 32)
 
 
-models <- lapply(seq(100), function(x){
-  act <- orthoptera_mdl_trte[[1]][[x]]
-  act_train <- act$training
-  act_test <- act$test
-  
-  # # Convert response variables to factors
-  # act_train[, response] <- as.factor(act_train[, response])
-  # act_test[, response] <- as.factor(act_test[, response])
-  # 
-  # resp2 <- act_train[, response]
-  # resp <- rep("no", length(resp2))
-  # resp[resp2 == "1"] <- "yes"
-  # resp <- as.factor(resp)
-  
-  resp <- act_train[, response]
-  indp <- act_train[, independent]
-  
-  set.seed(10)
-  cv_splits <- createFolds(resp, k=5, returnTrain = TRUE)
-  
-  # thresholds=c(seq(0.0, 0.40, 0.02),seq(0.50,1,0.1))
-  # summaryFunction = "fourStats"
-  
-  rfeCntrl <- rfeControl(functions = caretFuncs,
-                         method="cv", index = cv_splits,
-                         returnResamp = "all",
-                         verbose = FALSE,
-                         rerank=FALSE)
-  
-  trCntr <- trainControl(method="cv", number = 5, repeats = 1, verbose = FALSE)
-  
-  n_var <- seq(2, ncol(indp), 8)
-  
-  
-  # method = rf_thvs
-  # 
-  #   ctrl <- trainControl(index=cvSplits,
-  #                        method="cv",
-  #                        summaryFunction = eval(parse(text=summaryFunction)),
-  #                        classProbs = classProbs)
-  
-  rfe_model <- rfe(indp, resp,
-                   metric = "Accuracy", method = "rf", 
-                   sizes = n_var,
-                   rfeControl = rfeCntrl,
-                   trControl = trCntr, verbose = FALSE,
-                   tuneGrid = expand.grid(mtry = n_var))
-  
-  return(rfe_model)
-})
-
+models <- trainModel(orthoptera_mdl_trte, 
+                response_column = 2, independent_columns = seq(3, 32),
+                response_nbr = c(1,2), model_instc = 1)
 # devtools::use_data(models, overwrite = TRUE)
 # load(models)
 # load(orthoptera_mdl_trte)
