@@ -19,7 +19,11 @@ col_meta <- seq(1, 13)
 col_species <- seq(14, 178)
 col_modis <- seq(179, 216)
 
-save(orthoptera, file = "processed/orthoptera.rda")
+meta <- createGPMMeta(orthoptera, type = "input",
+                      selector = 1, response = seq(14, 178), 
+                      independent = seq(179, 216), meta = c(2: 15))
+orthoptera <- gpm(orthoptera, meta)
+# save(orthoptera, file = "processed/orthoptera.rda")
 
 
 
@@ -28,7 +32,7 @@ save(orthoptera, file = "processed/orthoptera.rda")
 # load("processed/orthoptera.rda")  
 plotid <- orthoptera$plot
 observations <- orthoptera[, col_species]
-prevalent_species <- minimumOccurence(plotid, observations, 
+prevalent_species <- minimumOccurence(x = observations, selector = plotid,
                                       resample = 100, thv = 20)
 save(prevalent_species, file = "processed/prevalent_species.rda")
 
