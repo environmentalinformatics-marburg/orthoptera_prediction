@@ -11,73 +11,58 @@ orthoptera <- read.table("original/lvl0300_biodiversity_data.csv",
                          header = TRUE, sep = ";", dec = ",")
 
 # Replace number of observations and NAs to 1/0
-orthoptera[, 14:178][is.na(orthoptera[, 14:178])] <- 0
-orthoptera[, 14:178][orthoptera[, 14:178] > 0] <- 1
+orthoptera[, 14:178][!is.na(orthoptera[, 14:178])] <- "yes"
+orthoptera[, 14:178][is.na(orthoptera[, 14:178])] <- "no"
+for(i in seq(14, 178)){
+  orthoptera[, i] <- as.factor(orthoptera[, i])
+}
 
-str(orthoptera)
+# Compile dataset containing complete cases only
+orthoptera <- 
+  orthoptera[, -(which(colnames(orthoptera) == "greyval_band_11") : 
+                   which(colnames(orthoptera) == "greyval_band_16"))]
+any(is.na(orthoptera_cplt[, -7]))
+
 col_meta <- seq(1, 13)
 col_species <- seq(14, 178)
-col_modis <- seq(179, 216)
+col_modis <- seq(179, 208)
 
 meta <- createGPMMeta(orthoptera, type = "input",
                       selector = 1, response = seq(14, 178), 
-                      independent = seq(179, 216), meta = c(2: 15))
+                      independent = seq(179, 208), meta = c(2: 13))
 orthoptera <- gpm(orthoptera, meta)
 # save(orthoptera, file = "processed/orthoptera.rda")
 
 
 
 
-# Select species which occure at least on 20 unique plots on average -----------
-# load("processed/orthoptera.rda")  
-plotid <- orthoptera$plot
-observations <- orthoptera[, col_species]
-prevalent_species <- minimumOccurence(x = observations, selector = plotid,
-                                      resample = 100, thv = 20)
-save(prevalent_species, file = "processed/prevalent_species.rda")
-
-
-
-
-# Compile dataset containing complete cases only -------------------------------
+# Select responses occuring at least across 20 unique selector values on average
 # load("processed/orthoptera.rda")
-# load("processed/prevalent_species.rda")
-orthoptera_cplt <- orthoptera[, c(col_meta, 
-                                  which(colnames(orthoptera) %in% prevalent_species),
-                                  col_modis)]
-summary(orthoptera_cplt)
-orthoptera_cplt <- 
-  orthoptera_cplt[, -(which(colnames(orthoptera_cplt) == "greyval_band_11") : 
-                        which(colnames(orthoptera_cplt) == "greyval_band_16"))]
-any(is.na(orthoptera_cplt[, -7]))
-save(orthoptera_cplt, file = "processed/orthoptera_cplt.rda")
+plotid <- orthoptera@data$input$plot
+observations <- orthoptera@data$input[, col_species]
+prevalent_species <- minimumOccurence(x = observations, selector = plotid,
+                                      occurence = "yes", 
+                                      resample = 100, thv = 20)
+# save(prevalent_species, file = "processed/prevalent_species.rda")
 
 
 
 
 # Compile model evaluation dataset ---------------------------------------------
-# Since caret's rfe function does not only allow letter characters as factor,
-# change 0/1 to no/yes for the species occurence columns.
-# load("processed/orthoptera_cplt.rda")
-for(i in seq(14, 34)){
-  temp <- as.character(orthoptera_cplt[, i])
-  temp[temp == "0"] <- "no"
-  temp[temp == "1"] <- "yes"
-  orthoptera_cplt[, i] <- as.factor(temp)
-}
-
-orthoptera_mdl <- conditionalSampleByVariable(orthoptera_cplt[, -(2:13)], 
-                                              selector = orthoptera_cplt$plot, 
+orthoptera_resamples <- resamplingsByVariable(x = orthoptera@data$input, 
+                                              selector = plotid, 
                                               resample = 100)
-save(orthoptera_cplt, file = "processed/orthoptera_mdl.rda")
+save(orthoptera_resamples, file = "processed/orthoptera_resamples.rda")
 
 
 
 
 # Split dataset into testing and training samples for each individual species --
 # load(""processed/orthoptera_mdl.rda")
-col_response <- seq(2,22)
-orthoptera_mdl_trte <- splitMultResp(orthoptera_mdl, col_response)
+col_response <- seq(14,15)
+orthoptera_trte <- splitMultResp(x = orthoptera@data$input, 
+                                 response = col_response,
+                                 resamples = orthoptera_resamples)
 save(orthoptera_mdl_trte, file = "processed/orthoptera_mdl_trte.rda")
 
 
