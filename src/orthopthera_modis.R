@@ -21,7 +21,7 @@ for(i in seq(14, 178)){
 orthoptera <- 
   orthoptera[, -(which(colnames(orthoptera) == "greyval_band_11") : 
                    which(colnames(orthoptera) == "greyval_band_16"))]
-any(is.na(orthoptera_cplt[, -7]))
+any(is.na(orthoptera[, -7]))
 
 col_meta <- seq(1, 13)
 col_species <- seq(14, 178)
@@ -58,25 +58,28 @@ save(orthoptera_resamples, file = "processed/orthoptera_resamples.rda")
 
 
 # Split dataset into testing and training samples for each individual species --
-# load(""processed/orthoptera_mdl.rda")
-col_response <- seq(14,15)
+# load("processed/orthoptera.rda")
+# load("processed/prevalent_species.rda")
+# load("processed/orthoptera_resamples.rda")
+col_response <- prevalent_species
 orthoptera_trte <- splitMultResp(x = orthoptera@data$input, 
                                  response = col_response,
                                  resamples = orthoptera_resamples)
-save(orthoptera_mdl_trte, file = "processed/orthoptera_mdl_trte.rda")
+# save(orthoptera_trte, file = "processed/orthoptera_trte.rda")
 
 
 
 
 # Evaluate prediction models ---------------------------------------------------
-# load("processed/orthoptera_mdl_trte.rda")
-response <- 2
-independent <- seq(3, 32)
+# load("processed/orthoptera.rda")
+# load("processed/orthoptera_trte.rda")
+response <- prevalent_species
+independent <- orthoptera@meta$input$INDEPENDENT
 
-
-models <- trainModel(orthoptera_mdl_trte, 
-                response_column = 2, independent_columns = seq(3, 32),
-                response_nbr = c(1,2), model_instc = 1)
+models <- trainModel(x = orthoptera@data$input, 
+                     response = response, independent = independent,
+                     resamples = orthoptera_trte,
+                     response_nbr = c(1,2), resample_nbr = c(1,2))
 # devtools::use_data(models, overwrite = TRUE)
 # load(models)
 # load(orthoptera_mdl_trte)
