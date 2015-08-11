@@ -52,7 +52,7 @@ prevalent_species <- minimumOccurence(x = observations, selector = plotid,
 orthoptera_resamples <- resamplingsByVariable(x = orthoptera@data$input, 
                                               selector = plotid, 
                                               resample = 100)
-save(orthoptera_resamples, file = "processed/orthoptera_resamples.rda")
+# save(orthoptera_resamples, file = "processed/orthoptera_resamples.rda")
 
 
 
@@ -72,24 +72,35 @@ orthoptera_trte <- splitMultResp(x = orthoptera@data$input,
 
 # Evaluate prediction models ---------------------------------------------------
 # load("processed/orthoptera.rda")
+# load("processed/prevalent_species.rda")
 # load("processed/orthoptera_trte.rda")
 response <- prevalent_species
 independent <- orthoptera@meta$input$INDEPENDENT
 
 models <- trainModel(x = orthoptera@data$input, 
                      response = response, independent = independent,
-                     resamples = orthoptera_trte,
-                     response_nbr = c(1,2), resample_nbr = c(1,2))
+                     resamples = orthoptera_trte, n_var = seq(1,30,5),
+                     response_nbr = c(1), resample_nbr = c(1,2))
+
+models[[1]][[1]]$model$fit
+
+plot(varImp(models[[1]][[1]]$model$fit,scale=TRUE))
+
+models[[1]][[2]]$response
+models[[1]][[2]]$testing$RESPONSE
+models[[1]][[2]]$testing$PREDICTED[,1]
+
 # devtools::use_data(models, overwrite = TRUE)
 # load(models)
 # load(orthoptera_mdl_trte)
 
-
-plot(varImp(rfe_model$fit,scale=TRUE))
-
-test <- lapply(seq(100), function(x){
-  act_test <- predict(models[[x]], orthoptera_mdl_trte[[1]][[x]]$test[, independent])
-  act_obs <- orthoptera_mdl_trte[[1]][[x]]$test[, response]
-  calcKappa(ftable(data.frame(PREDICT = act_test$pred, OBSERVERD = act_obs)))[1]
+kappa <- lapply(models, function(i){
+  lapply(i, function(j){
+    print(j$model)
+    act_test_pred <- j$testing$PREDICTED[,1]
+    act_test_obsvd <- j$testing$RESPONSE
+    calcKappa(ftable(data.frame(PREDICT = act_test_pred, 
+                                OBSERVERD = act_test_obsvd)))[1]
+  })
 })
-summary(unlist(test))
+summary(unlist(kappa))
