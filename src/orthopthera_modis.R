@@ -40,12 +40,16 @@ orthoptera <- gpm(orthoptera, meta)
 # load("processed/orthoptera.rda")
 plotid <- orthoptera@data$input$plot
 observations <- orthoptera@data$input[, col_species]
-prevalent_species <- minimumOccurence(x = observations, selector = plotid,
-                                      occurence = "yes", 
-                                      resample = 100, thv = 20)
+min_occurence <- minimumOccurence(x = observations, selector = plotid,
+                                  occurence = "yes", 
+                                  resample = 100, thv = 20)
+prevalent_species <- min_occurence[[1]]
+prevalence <- data.frame(min_occurence[[2]])
+prevalence$RESPONSE <- rownames(prevalence)
+names(prevalence)[1] <- "OCCURENCE"
+rownames(prevalence) <- NULL
 # save(prevalent_species, file = "processed/prevalent_species.rda")
-
-
+# save(prevalence, file = "processed/prevalence.rda")
 
 
 # Compile model evaluation dataset ---------------------------------------------
@@ -77,30 +81,40 @@ orthoptera_trte <- splitMultResp(x = orthoptera@data$input,
 response <- prevalent_species
 independent <- orthoptera@meta$input$INDEPENDENT
 
+# models <- trainModel(x = orthoptera@data$input, 
+#                      response = response, independent = independent,
+#                      resamples = orthoptera_trte, n_var = seq(1,30,5),
+#                      response_nbr = c(1,2), resample_nbr = c(1,2),
+#                      mthd = "nnet")
+
 models <- trainModel(x = orthoptera@data$input, 
                      response = response, independent = independent,
                      resamples = orthoptera_trte, n_var = seq(1,30,5),
-                     response_nbr = c(1), resample_nbr = c(1,2))
+                     mthd = "nnet")
+# save(models, file = "processed/models.rda")
 
-models[[1]][[1]]$model$fit
+var_imp <- compVarImp(models)
 
-plot(varImp(models[[1]][[1]]$model$fit,scale=TRUE))
+var_imp_plot <- plotVarImp(var_imp)
 
-models[[1]][[2]]$response
-models[[1]][[2]]$testing$RESPONSE
-models[[1]][[2]]$testing$PREDICTED[,1]
+var_imp_heat <- plotVarImpHeatmap(var_imp, xlab = "Species", ylab = "Band")
 
-# devtools::use_data(models, overwrite = TRUE)
-# load(models)
-# load(orthoptera_mdl_trte)
+tests <- compContTests(models)
 
-kappa <- lapply(models, function(i){
-  lapply(i, function(j){
-    print(j$model)
-    act_test_pred <- j$testing$PREDICTED[,1]
-    act_test_obsvd <- j$testing$RESPONSE
-    calcKappa(ftable(data.frame(PREDICT = act_test_pred, 
-                                OBSERVERD = act_test_obsvd)))[1]
-  })
+tstat_mean <- lapply(tests, function(x){
+  data.frame(RESPONSE = x$RESPONSE[1], 
+             KAPPA_MEAN = mean(x$Kappa, na.rm = TRUE),
+             POD_MEAN = mean(x$POD, na.rm = TRUE),
+             FAR_MEAN = mean(x$FAR, na.rm = TRUE), 
+             POFD_MEAN = mean(x$POFD, na.rm = TRUE),
+             ACCURACY_MEAN = mean(x$ACCURACY, na.rm = TRUE),
+             SR_MEAN = mean(x$SR, na.rm = TRUE),
+             TS_MEAN = mean(x$TS, na.rm = TRUE),
+             ETS_MEAN = mean(x$ETS, na.rm = TRUE),
+             HK_MEAN = mean(x$HK, na.rm = TRUE))
 })
-summary(unlist(kappa))
+tstat_mean <- do.call("rbind", tstat_mean)
+tstat_mean <- merge(tstat_mean, prevalence, by = "RESPONSE")
+tstat_mean[order(tstat_mean$KAPPA_MEAN, decreasing = TRUE),]
+corrplot(cor(tstat_mean[, -1]))
+
