@@ -87,11 +87,19 @@ independent <- orthoptera@meta$input$INDEPENDENT
 #                      response_nbr = c(1,2), resample_nbr = c(1,2),
 #                      mthd = "nnet")
 
+
 models <- trainModel(x = orthoptera@data$input, 
                      response = response, independent = independent,
-                     resamples = orthoptera_trte, n_var = seq(1,30,5),
-                     mthd = "nnet")
-# save(models, file = "processed/models.rda")
+                     resamples = orthoptera_trte, n_var = seq(1,30,2),
+                     response_nbr = seq(5),
+                     mthd = "avNNet")
+
+
+models <- trainModel(x = orthoptera@data$input, 
+                     response = response, independent = independent,
+                     resamples = orthoptera_trte, n_var = seq(1,30,2),
+                     mthd = "avNNet")
+# save(models, file = "processed/models_avnnet.rda")
 
 var_imp <- compVarImp(models)
 
