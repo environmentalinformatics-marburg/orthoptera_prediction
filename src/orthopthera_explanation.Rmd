@@ -1,0 +1,148 @@
+---
+title: "Erklaerung?"
+author: "Alberich und Mausi"
+date: "Wednesday, December 02, 2015"
+output:
+html_document:
+fig_height: 10
+runtime: shiny
+---
+
+```{r, echo = FALSE, warning=FALSE, message=FALSE, results="hide"}
+# library(corrplot)
+# library(ggvis)
+# library(ggplot2)
+library(latticeExtra)
+# library(corrplot)
+library(quantreg)
+
+if(Sys.info()["user"] == "shiny"){
+  in_path <- "/srv/shiny-server/moc/temp/alberich/"
+  } else {
+    setwd("D:/active/orthoptera/orthoptera_prediction/src")
+    in_path <- getwd()
+    }
+
+clrs_hcl <- function(n) {
+  hcl(h = seq(0, 260, length.out = n), 
+      c = 60, l = 50, 
+      fixup = TRUE)
+  }
+
+load("expl_pca.rda")
+
+values <- c("KAPPA_MEAN", "POD_MEAN", "FAR_MEAN", "POFD_MEAN",
+            "ACCURACY_MEAN", "SR_MEAN", "TS_MEAN", "ETS_MEAN", 
+            "HK_MEAN",
+            "Gesamtlaenge", "PronotLaenge", "PronotBreite",
+            "AugenDurchm", "AugenAbs", "Ovipositor", "Femurhinten",
+            "Tibiahinten", "Femurmitte", "Femurvorne",
+            "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", 
+            "PC8", "PC9", "PC10")
+colors <- clrs_hcl(nrow(expl_pca))
+
+```
+
+```{r, echo=FALSE}
+# inputPanel(
+#   selectInput("n_y", "y axis:", values),
+#   selectInput("n_x", "x axis:", values)
+# )
+# 
+# renderPlot(height = 500, width = 600, {
+# ggplot(expl_pca, aes_string(x = input$n_x, y = input$n_y)) +
+#   geom_point(aes(colour = OCCURENCE), size = 5) +   
+#   geom_text(aes(label = substr(RESPONSE, 1, 5
+#                                )), size = 3, hjust=1, vjust=1) + 
+#   ggtitle("POD vs FAR") + 
+#   labs(x = input$n_x, y = input$n_x, colour = "Occurence") + 
+#   scale_colour_gradientn(colours=colors)
+# })
+
+# colors <- clrs_hcl(2)
+# 
+# slider <- input_slider(10, 1000)
+# 
+# yv <- input_select(values, label = "y axis", map = as.name)
+# xv <- input_select(values, label = "x axis", map = as.name)
+# 
+# expl_pca %>% ggvis(xv, yv) %>%
+#   layer_points(fill = ~OCCURENCE, size := slider) %>%
+#   layer_text(text := ~RESPONSE_SHORT, fontSize = 3) %>%
+#   scale_numeric("fill", range = colors) %>%
+#   add_axis("x", title = names(xv))
+
+
+```
+
+```{r, echo=FALSE, warning=FALSE}
+tau <- seq(0.05, 0.95, 0.05)
+
+inputPanel(
+  selectInput("n_y", "y axis:", values, selected  = "KAPPA_MEAN"),
+  selectInput("n_x", "x axis:", values, selected  = "PC1"),
+  sliderInput("n_tau", "quantile regression:", min = 0.05, max = 0.95, 
+              step = 0.05, value = 0.5)
+  )
+
+renderPlot(height = 500, width = 600, {
+  rq <- rq(expl_pca[, input$n_y] ~ expl_pca[, input$n_x], tau = input$n_tau)
+  
+  xyplot(expl_pca[, input$n_y] ~ expl_pca[, input$n_x], data = expl_pca,
+         fill.color = colors, xlab = input$n_x, ylab = input$n_y,
+         panel = function(x, y,fill.color,...) {
+           fill = fill.color
+           panel.xyplot(x, y, pch=19, cex = 2, col=fill, grid = TRUE)
+           panel.text(x, y-0.02, cex = 0.75, labels = expl_pca$RESPONSE)
+           panel.lmline(x, y, ...)
+           panel.abline(rq$coefficients, col = "red")
+           },
+         par.settings = custom.theme(region = colors, alpha = 1.0),
+         legend = list(
+           top = list(fun = "draw.colorkey", 
+                      args = list(
+                        list(space = "top",
+                             at = seq(min(expl_pca$OCCURENCE),
+                                      max(expl_pca$OCCURENCE), 
+                                      length.out = nrow(expl_pca)),
+                             width = 1, col = colors)))))
+  
+  })
+
+
+renderPlot(height = 500, width = 600, {
+  expl_pca_rq <- rq(expl_pca[, input$n_y] ~ expl_pca[, input$n_x], 
+                    tau = seq(0.05, 0.95, 0.05))
+  plot(expl_pca_rq)
+  })
+
+renderPrint({
+  expl_pca_rq <- rq(expl_pca[, input$n_y] ~ expl_pca[, input$n_x], 
+                    tau = seq(0.05, 0.95, 0.05))
+  summary(expl_pca_rq)
+ })
+
+# 
+# ggplot(expl_pca, aes_string(x = input$n_x, y = input$n_y)) +
+#   geom_point(aes(colour = OCCURENCE), size = 5) +   
+#   geom_text(aes(label = substr(RESPONSE, 1, 5
+#                                )), size = 3, hjust=1, vjust=1) + 
+#   ggtitle("POD vs FAR") + 
+#   labs(x = input$n_x, y = input$n_x, colour = "Occurence") + 
+#   scale_colour_gradientn(colours=colors)
+
+# colors <- clrs_hcl(2)
+# 
+# slider <- input_slider(10, 1000)
+# 
+# yv <- input_select(values, label = "y axis", map = as.name)
+# xv <- input_select(values, label = "x axis", map = as.name)
+# 
+# expl_pca %>% ggvis(xv, yv) %>%
+#   layer_points(fill = ~OCCURENCE, size := slider) %>%
+#   layer_text(text := ~RESPONSE_SHORT, fontSize = 3) %>%
+#   scale_numeric("fill", range = colors) %>%
+#   add_axis("x", title = names(xv))
+
+
+```
