@@ -51,12 +51,13 @@ load("processed/prevalent_species.rda")
 load("processed/tstat_mean_rf.rda")
 
 # Adjust test statistics
-tstat_mean$RESPONSE <- gsub("\\.", " ", tstat_mean$RESPONSE) 
-tstat_mean$RESPONSE[tstat_mean$RESPONSE == "Cyrtacanthacris tatarica"] <-
+tstat_mean <- tstat[[1]]
+tstat_mean$Response <- gsub("\\.", " ", tstat_mean$Response) 
+tstat_mean$Response[tstat_mean$Response == "Cyrtacanthacris tatarica"] <-
   "Cyrtacanthacris tatarica tatarica"
-tstat_mean$RESPONSE[tstat_mean$RESPONSE == "Gymnobothrus flexuosus"] <-
+tstat_mean$Response[tstat_mean$Response == "Gymnobothrus flexuosus"] <-
   "Gymnobothrus temporalis flexuosus"
-tstat_mean$RESPONSE_SHORT <- substr(tstat_mean$RESPONSE, 1, 4)
+tstat_mean$Response_SHORT <- substr(tstat_mean$Response, 1, 4)
 
 # Adjust prevalence information
 prevalence$RESPONSE <- gsub("\\.", " ", prevalence$RESPONSE) 
@@ -69,14 +70,14 @@ prevalence$RESPONSE[prevalence$RESPONSE == "Gymnobothrus flexuosus"] <-
 # Read traits information ------------------------------------------------------
 traits <- read.table("traits/Orthoptera_10_11_2015.csv",
                      header = TRUE, sep = ";", dec = ".")
-traits <- traits[traits$Name %in% tstat_mean$RESPONSE, ]
+traits <- traits[traits$Name %in% tstat_mean$Response, ]
 traits[, 5:15] <- log(traits[, 5:15])
 traits_mean <- aggregate(traits[, 5:15], by = list(traits$Name), FUN = mean,
                            na.rm = TRUE)
 
 
 # Combine model statistics and traits and analyse information ------------------
-expl <- cbind(tstat_mean, traits_mean, by.x = "RESPONSE", by.y = "Group.1")
+expl <- cbind(tstat_mean, traits_mean, by.x = "Response", by.y = "Group.1")
 expl <- cbind(expl, prevalence, by = "RESPONSE")
 
 # PCA over traits
@@ -87,14 +88,29 @@ pca <- prcomp(expl[, trait_names], center = TRUE, scale = FALSE)
 
 biplot(pca,  choices = c(1,2))
 
+png("figures/fig_06_pca_01.png", 
+    width = 1024 * 6, 
+    height = 748 * 6, 
+    units = "px", 
+    res = 600)
+biplot(pca,  choices = c(1,2))
+graphics.off()
+
+png("figures/fig_06_pca_02.png", 
+    width = 1024 * 6, 
+    height = 748 * 6, 
+    units = "px", 
+    res = 600)
+biplot(pca,  choices = c(1,3))
+graphics.off()
 
 expl_pca <- cbind(expl, pca$x)
 # save(expl_pca, file = "D:/active/orthoptera/orthoptera_prediction/src/expl_pca.rda")
 
 # Correlation
-values <- c("KAPPA_MEAN", "POD_MEAN", "FAR_MEAN", "POFD_MEAN",
-            "ACCURACY_MEAN", "SR_MEAN", "TS_MEAN", "ETS_MEAN", 
-            "HK_MEAN",
+values <- c("Kappa_mean", "POD_mean", "FAR_mean", "POFD_mean",
+            "Accuracy_mean", "SR_mean", "TS_mean", "ETS_mean", 
+            "HK_mean",
             "Gesamtlaenge", "PronotLaenge", "PronotBreite",
             "AugenDurchm", "AugenAbs", "Ovipositor", "Femurhinten",
             "Tibiahinten", "Femurmitte", "Femurvorne",
@@ -102,13 +118,18 @@ values <- c("KAPPA_MEAN", "POD_MEAN", "FAR_MEAN", "POFD_MEAN",
             "PC8", "PC9", "PC10")
 
 expl_cor <- cor(expl_pca[, values])
-
 # corrplot(expl_cor, type ="lower")
 
 
 
 # Visual analysis
-expl_pca_lm <- lm(ETS_MEAN ~ Gesamtlaenge, data = expl_pca)
+colors <- clrs_hcl(nrow(expl_pca))
+
+
+
+
+
+expl_pca_lm <- lm(ETS_mean ~ Gesamtlaenge, data = expl_pca)
 summary(expl_pca_lm)
 
 expl_pca_rq <- rq(ETS_MEAN ~ PC1, data = expl_pca, tau = seq(0.01, 0.90, 0.10))

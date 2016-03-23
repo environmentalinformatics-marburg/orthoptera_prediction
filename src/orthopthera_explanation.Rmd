@@ -31,9 +31,9 @@ clrs_hcl <- function(n) {
 
 load("expl_pca.rda")
 
-values <- c("KAPPA_MEAN", "POD_MEAN", "FAR_MEAN", "POFD_MEAN",
-            "ACCURACY_MEAN", "SR_MEAN", "TS_MEAN", "ETS_MEAN", 
-            "HK_MEAN",
+values <- c("Kappa_mean", "POD_mean", "FAR_mean", "POFD_mean",
+            "Accuracy_mean", "SR_mean", "TS_mean", "ETS_mean", 
+            "HK_mean",
             "Gesamtlaenge", "PronotLaenge", "PronotBreite",
             "AugenDurchm", "AugenAbs", "Ovipositor", "Femurhinten",
             "Tibiahinten", "Femurmitte", "Femurvorne",

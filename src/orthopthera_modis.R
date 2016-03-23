@@ -2,7 +2,7 @@ setwd("D:/active/orthoptera/data")
 
 # Libraries --------------------------------------------------------------------
 # library(gpm)
-
+library(ggplot2)
 
 
 
@@ -82,55 +82,47 @@ load("processed/orthoptera_trte.rda")
 response <- prevalent_species
 independent <- orthoptera@meta$input$INDEPENDENT
 
-# models <- trainModel(x = orthoptera@data$input, 
+# models <- trainModel(x = orthoptera, 
 #                      response = response, independent = independent,
 #                      resamples = orthoptera_trte, n_var = seq(1,30,5),
-#                      mthd = "rf")
-# save(models, file = "processed/models_rf-2015-11-26.rda")
+#                      mthd = "rf", seed_nbr = 11, cv_nbr = 2)
+# save(models, file = "processed/models_rf-2016-03-04.rda")
 
 
-models <- trainModel(x = orthoptera@data$input, 
-                     response = response, independent = independent,
-                     resamples = orthoptera_trte, n_var = seq(1,30,2),
-                     response_nbr = seq(5),
-                     mthd = "avNNet")
-
-
-models <- trainModel(x = orthoptera@data$input, 
-                     response = response, independent = independent,
-                     resamples = orthoptera_trte, n_var = seq(1,30,2),
-                     mthd = "avNNet")
+# models <- trainModel(x = orthoptera@data$input, 
+#                      response = response, independent = independent,
+#                      resamples = orthoptera_trte, n_var = seq(1,30,2),
+#                      response_nbr = seq(5),
+#                      mthd = "avNNet")
+# 
+# 
+# models <- trainModel(x = orthoptera@data$input, 
+#                      response = response, independent = independent,
+#                      resamples = orthoptera_trte, n_var = seq(1,30,2),
+#                      mthd = "avNNet")
 # save(models, file = "processed/models_avnnet.rda")
+# load("processed/models_rf-2015-11-26.rda")
 # load("processed/models_rf.rda")
+load("processed/models_rf-2016-03-04.rda")
 
-var_imp <- compVarImp(models)
+var_imp <- compVarImp(models, scale = FALSE)
+
+var_imp_scale <- compVarImp(models, scale = TRUE)
 
 var_imp_plot <- plotVarImp(var_imp)
 
-var_imp_heat <- plotVarImpHeatmap(var_imp, xlab = "Species", ylab = "Band")
+var_imp_heat <- plotVarImpHeatmap(var_imp_scale, xlab = "Species", ylab = "Band")
 
-# png("var_imp_heat.png")
-# var_imp_heat
-# dev.off()
+tstat <- compContTests(models, mean = TRUE)
 
-tests <- compContTests(models)
+tstat_mean <- merge(tstat[[1]], prevalence, by.x = "Response", by.y = "RESPONSE")
 
-tstat_mean <- lapply(tests, function(x){
-  data.frame(RESPONSE = x$RESPONSE[1], 
-             KAPPA_MEAN = mean(x$Kappa, na.rm = TRUE),
-             POD_MEAN = mean(x$POD, na.rm = TRUE),
-             FAR_MEAN = mean(x$FAR, na.rm = TRUE), 
-             POFD_MEAN = mean(x$POFD, na.rm = TRUE),
-             ACCURACY_MEAN = mean(x$ACCURACY, na.rm = TRUE),
-             SR_MEAN = mean(x$SR, na.rm = TRUE),
-             TS_MEAN = mean(x$TS, na.rm = TRUE),
-             ETS_MEAN = mean(x$ETS, na.rm = TRUE),
-             HK_MEAN = mean(x$HK, na.rm = TRUE))
-})
-tstat_mean <- do.call("rbind", tstat_mean)
-tstat_mean <- merge(tstat_mean, prevalence, by = "RESPONSE")
-tstat_mean[order(tstat_mean$KAPPA_MEAN, decreasing = TRUE),]
-# save(tstat_mean, file = "processed/tstat_mean_rf.rda")
-library(corrplot)
-corrplot(cor(tstat_mean[, -1]))
+
+tstat_mean[order(tstat_mean$Kappa_mean, decreasing = TRUE),]
+
+ggplot(data = tstat_mean, aes(x = OCCURENCE, y = Kappa_mean)) + geom_point() + geom_smooth()
+
+# save(tstat, tstat_mean, file = "processed/tstat_mean_rf.rda")
+
+
 
