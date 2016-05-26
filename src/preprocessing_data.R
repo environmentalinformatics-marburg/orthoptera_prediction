@@ -6,16 +6,16 @@ library(sp)
 
 
 if(Sys.info()["sysname"] == "Windows"){
-  filepath_base <- "E:/analysis/orthoptera/"
+  filepath_base <- "G:/analysis/orthoptera/data/"
 } else {
-  filepath_base <- "/media/tnauss/myWork/analysis/orthoptera/"
+  filepath_base <- "/media/tnauss/myWork/analysis/orthoptera/data/"
 }
 
-rasterOptions(tmpdir=paste0(filepath_base, "data/temp"))
+rasterOptions(tmpdir=paste0(filepath_base, "temp"))
 
-filepath_landsat <- paste0(filepath_base, "data/landsat/")
-filepath_modis <- paste0(filepath_base, "data/modis/processed/")
-filepath_obsv <- paste0(filepath_base, "data/orthoptera/")
+filepath_landsat <- paste0(filepath_base, "landsat/")
+filepath_modis <- paste0(filepath_base, "modis/processed/")
+filepath_obsv <- paste0(filepath_base, "orthoptera/")
 
 
 # Read observations
@@ -41,6 +41,12 @@ colnames(lnds_vals) <- paste0("gls2000_", substr(colnames(lnds_vals), 21, nchar(
 obsv <- cbind(obsv, lnds_vals)
 
 # Read MODIS datasets and attach to observations
+modis_files <- list.files(paste0(filepath_modis, "MOD09GA_TZS"), 
+                          pattern = glob2rx("*sur_refl_b0*tif"), 
+                          full.names = TRUE)
+modis <- stack(modis_files)
+shp <- spTransform(shp, projection(modis))
+modis_vals <- extract(modis, shp)
 
 # Write dataset
 write.table(as.data.frame(obsv), 

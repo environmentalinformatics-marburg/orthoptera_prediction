@@ -6,16 +6,16 @@ library(rgdal)
 library(MODIS)
 
 if(Sys.info()["sysname"] == "Windows"){
-  filepath_base <- "E:/analysis/orthoptera/"
+  filepath_base <- "G:/analysis/orthoptera/data/"
 } else {
-  filepath_base <- "/media/tnauss/myWork/analysis/orthoptera/"
+  filepath_base <- "/media/tnauss/myWork/analysis/orthoptera/data/"
 }
 
 localArcPath <- paste0(filepath_base, "modis/modis_arc/")
 outDirPath <- paste0(filepath_base, "modis/processed/")
 cropPath <-paste0(filepath_base, "modis/croped/")
 
-obsv_filepath <- paste0(filepath_base, "data/orthoptera/")
+obsv_filepath <- paste0(filepath_base, "orthoptera/")
 
 rasterOptions(tmpdir= paste0(filepath_base, "temp/"))
 
@@ -27,57 +27,50 @@ dates <- gsub("-", "", substring(unique(obsv$date_nocloud), 1, 8), "-")
 
 # Set processing options
 MODISoptions(localArcPath = localArcPath, outProj = "+init=epsg:32737",
-             outDirPath = outDirPath, MODISserverOrder = c("LAADS", "LPDAAC"))
-# , gdalPath = "C:/OSGeo4W64/bin")
+             outDirPath = outDirPath, MODISserverOrder = c("LAADS", "LPDAAC"),
+             gdalPath = "C:/OSGeo4W64/bin")
 
 
 # Download MODIS tiles
 modis_product <- c("MOD09GA", "MOD09A1", "MOD09Q1", "MOD11A1",
                    "MYD09GA", "MYD09A1", "MYD09Q1", "MYD11A1")
-collection <- getCollection("MYD09GA", forceCheck = TRUE)
 
 for(pdct in modis_product){
   for(dts in dates){
     job_name <- paste0(pdct, "_TZS")
-    collection <- getCollection(pdct, forceCheck = FALSE)
-    collection[[1]] <- "006"
+    collection <- getCollection(pdct, forceCheck = TRUE)
     runGdal(pdct, collection = collection, job = job_name, 
-            tileH = 15, tileV = 7,
+            tileH = 21, tileV = 9,
             begin = dts, end = dts)
   }
 }
 
-
-modis_product <- "MOD09A1"
-job_name <- paste0(modis_product, "_CPV")
-
-collection <- getCollection(modis_product, forceCheck = FALSE)
-collection[[1]] <- "006"
-
-runGdal(modis_product, collection = collection, job = job_name, 
-        tileH = 15, tileV = 7,
-        begin = "2004274", end = "2004276")
-
-
-
-
-
-
+  
 # Post-processing
-# Get country boundaries
-# country_shp <- getData(country = "CPV", level = 0, path = shpPath)
-country_shp <- readOGR(paste0(shpPath, "CAP_admin_UTM26_SHP/CAP_UTM26.shp"), 
-                       layer = "CAP_UTM26")
-projection(country_shp) <- 
-  CRS("+proj=utm +zone=26 +ellps=WGS84 +datum=WGS84 +units=m +no_defs ")
-country_shp <- spTransform(country_shp, CRS = CRS("+init=epsg:32626"))
-# plot(country_shp)
+obsv_buffer <- readOGR(paste0(
+  obsv_filepath, "lvl0300_biodiversity_data_utm37s_buffer_dissolve_single.shp"),
+  "lvl0300_biodiversity_data_utm37s_buffer_dissolve_single")
 
-modis_files <- list.files(paste0(getOption("MODIS_outDirPath"), "/", job_name),
-                          pattern = glob2rx("*.tif"), full.names = TRUE)
-modis_data <- stack(modis_files)
-modis_data_crop <- crop(modis_data, country_shp)     
-writeRaster(modis_data_crop, paste0(cropPath, "MODIS.tif"), bylayer = TRUE)
+modis_product <- c("MOD09GA", "MOD09A1", "MOD09Q1",
+                   "MYD09GA", "MYD09A1", "MYD09Q1")
+for(pdct in modis_product){
+  job_name <- paste0(pdct, "_TZS")
+  modis_files <- list.files(paste0(outDirPath, job_name),
+                            pattern = glob2rx("*sur_refl_b0*tif"), 
+                            full.names = TRUE)
+  modis_data <- stack(modis_files)
+  obsv_buffer_tf <- spTransform(obsv_buffer, projection(modis_data))
+  modis_data_crop <- crop(modis_data, obsv_buffer_tf)     
+  
+  modis_outpath <- paste0(outDirPath, job_name, "_croped")
+  dir.create(modis_outpath,  recursive = FALSE)
+  modis_outfiles <- paste0(modis_outpath, "/", basename(modis_files))
+  
+  writeRaster(modis_data_crop, filename = modis_outfiles, 
+              format = "GTiff", bylayer = TRUE)
+  
+}
+
 
 
 # lst <- lapply(c("NDVI", "VI_Quality"), function(i) {
