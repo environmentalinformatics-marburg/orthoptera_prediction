@@ -3,49 +3,50 @@ library(gpm)
 library(ggplot2)
 
 if(Sys.info()["sysname"] == "Windows"){
-  filepath_base <- "E:/analysis/orthoptera/"
+  filepath_base <- "E:/analysis/orthoptera/data/"
 } else {
-  filepath_base <- "/media/tnauss/myWork/analysis/orthoptera/"
+  filepath_base <- "/media/tnauss/myWork/analysis/orthoptera/data/"
 }
 
-filepath_obsv <- paste0(filepath_base, "data/orthoptera/")
-filepath_results <- paste0(filepath_base, "data/gpm_results/")
+filepath_obsv <- paste0(filepath_base, "orthoptera/")
+filepath_results <- paste0(filepath_base, "rdata/")
 
 
 # Prepare observations ---------------------------------------------------------
 # Read observation dataset
-obsv <- read.table(paste0(filepath_obsv, "orthoptera_sat.csv"),
-                   sep = ",", dec = ".", header = TRUE)
+load(paste0(filepath_results, "preprocessing_data_obsv.RData"))
 
 # Replace number of observations and NAs to 1/0
 colnames(obsv)
 
-obsv[, 14:178][!is.na(obsv[, 14:178])] <- "yes"
-obsv[, 14:178][is.na(obsv[, 14:178])] <- "no"
-for(i in seq(14, 178)){
+col_meta <- seq(1, 14)
+col_species <- seq(15, 179)
+col_sat <- seq(179, ncol(obsv))
+
+obsv[, col_species][!is.na(obsv[, col_species])] <- "yes"
+obsv[, col_species][is.na(obsv[, col_species])] <- "no"
+for(i in col_species){
   obsv[, i] <- as.factor(obsv[, i])
 }
 
 # Compile dataset containing complete cases only
-obsv <- obsv[, -which(colnames(obsv) == "gls2000_hist_glcm_correlation")]
-any(is.na(obsv[, -7]))
-
-col_meta <- seq(1, 13)
-col_species <- seq(14, 178)
-col_sat <- seq(179, ncol(obsv))
+summary(obsv)
+obsv <- obsv[!is.na(obsv$MOD09GA_sur_refl_b01_1), ]
+dim(obsv)
+summary(obsv)
 
 meta <- createGPMMeta(obsv, type = "input",
                       selector = 1, response = col_species, 
                       independent = col_sat, meta = col_meta)
-obsv <- gpm(obsv, meta)
-# save(obsv, file = paste0(filepath_results, "obsv.rda"))
+obsv_gpm <- gpm(obsv, meta)
+# save(obsv_gpm, file = paste0(filepath_results, "orthoptera_prediction_obsv_gpm.rda"))
 
 
 # Sampling ---------------------------------------------------------------------
 # Select responses occuring at least across 20 unique selector values on average
-# load(paste0(filepath_results, "obsv.rda"))
-plotid <- obsv@data$input$plot
-observations <- obsv@data$input[, col_species]
+# load(paste0(filepath_results, "orthoptera_prediction_obsv_gpm.rda"))
+plotid <- obsv_gpm@data$input$plot
+observations <- obsv_gpm@data$input[, col_species]
 min_occurence <- minimumOccurence(x = observations, selector = plotid,
                                   occurence = "yes", 
                                   resample = 100, thv = 20)
@@ -54,46 +55,44 @@ prevalence <- data.frame(min_occurence[[2]])
 prevalence$RESPONSE <- rownames(prevalence)
 names(prevalence)[1] <- "OCCURENCE"
 rownames(prevalence) <- NULL
-# save(prevalent_species, file = paste0(filepath_results, "prevalent_species.rda"))
-# save(prevalence, file = paste0(filepath_results, "prevalence.rda"))
+# save(prevalent_species, file = paste0(filepath_results, "orthoptera_prediction_prevalent_species.rda"))
+# save(prevalence, file = paste0(filepath_results, "orthoptera_prediction_prevalence.rda"))
 
 
 # Compile model evaluation dataset ---------------------------------------------
-orthoptera_resamples <- resamplingsByVariable(x = obsv@data$input, 
+orthoptera_resamples <- resamplingsByVariable(x = obsv_gpm@data$input, 
                                               selector = plotid, 
                                               grabs = 1,
                                               resample = 100)
-# save(orthoptera_resamples, file = paste0(filepath_results, "orthoptera_resamples.rda"))
+# save(orthoptera_resamples, file = paste0(filepath_results, "orthoptera_prediction_orthoptera_resamples.rda"))
 
 
 # Split dataset into testing and training samples for each individual species --
-# load(paste0(filepath_results, "obsv.rda"))
-# load("processed/prevalent_species.rda")
-# load("processed/orthoptera_resamples.rda")
+# load(file = paste0(filepath_results, "orthoptera_prediction_obsv_gpm.rda"))
+# load(file = paste0(filepath_results, "orthoptera_prediction_prevalent_species.rda"))
+# load(paste0(filepath_results, "orthoptera_prediction_orthoptera_resamples.rda"))
 col_response <- prevalent_species
-orthoptera_trte <- splitMultResp(x = obsv@data$input, 
+orthoptera_trte <- splitMultResp(x = obsv_gpm@data$input, 
                                  response = col_response,
                                  resamples = orthoptera_resamples)
-# save(orthoptera_trte, file = paste0(filepath_results, "orthoptera_trte.rda"))
-
-
+# save(orthoptera_trte, file = paste0(filepath_results, "orthoptera_prediction_orthoptera_trte.rda"))
 
 
 # Evaluate prediction models ---------------------------------------------------
-# load(paste0(filepath_results, "orthoptera.rda"))
-# load(paste0(filepath_results, "prevalent_species.rda"))
-# load(paste0(filepath_results, "orthoptera_trte.rda"))
-# load(paste0(filepath_results, "obsv.rda"))
+# load(file = paste0(filepath_results, "orthoptera_prediction_obsv_gpm.rda"))
+# load(file = paste0(filepath_results, "orthoptera_prediction_prevalent_species.rda"))
+# load(paste0(filepath_results, "orthoptera_prediction_orthoptera_resamples.rda"))
+# load(paste0(filepath_results, "orthoptera_prediction_orthoptera_trte.rda"))
 response <- prevalent_species
-independent <- obsv@meta$input$INDEPENDENT
+independent <- obsv_gpm@meta$input$INDEPENDENT
 
-models <- trainModel(x = obsv, 
+models <- trainModel(x = obsv_gpm, 
                      response = response, independent = independent,
                      resamples = orthoptera_trte,  mode = "ffs",
                      n_var = seq(1,30,5), resample_nbr = 2, response_nbr = seq(2),
                      mthd = "rf", seed_nbr = 11, cv_nbr = 2)
 
-models <- trainModel(x = obsv, 
+models <- trainModel(x = obsv_gpm, 
                      response = response, independent = independent,
                      resamples = orthoptera_trte, n_var = seq(1,30,5),
                      mthd = "rf", seed_nbr = 11, cv_nbr = 2)

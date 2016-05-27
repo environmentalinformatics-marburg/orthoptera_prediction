@@ -70,21 +70,3 @@ for(pdct in modis_product){
               format = "GTiff", bylayer = TRUE)
   
 }
-
-
-
-# lst <- lapply(c("NDVI", "VI_Quality"), function(i) {
-#   fls <- list.files(paste0(getOption("MODIS_outDirPath"), "/MOD09A1_CPV"), 
-#                     pattern = paste0(i, ".tif$"), full.names = TRUE)
-#   rst <- stack(fls)
-#   rst_crp <- crop(rst, shp)     
-#   if (i == "NDVI") 
-#     rst_crp <- rst_crp * 0.0001
-#   return(rst_crp)
-# })
-
-# ## install and load 'MODIS' version 0.10-18 (assuming that the older version of 
-# ## 'MODIS' is located inside your current working directory)
-# detach("package:MODIS", unload = TRUE)
-# install.packages("MODIS_0.10-18.tar.gz", repos = NULL, type = "source")
-# library(MODIS)
