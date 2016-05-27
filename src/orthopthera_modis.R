@@ -1,4 +1,4 @@
-setwd("D:/active/orthoptera/data")
+
 
 # Libraries --------------------------------------------------------------------
 # library(gpm)
@@ -7,7 +7,7 @@ library(ggplot2)
 
 
 # Read and adjust data from S. Schlauss, level 300 -----------------------------
-orthoptera <- read.table("original/lvl0300_biodiversity_data.csv", 
+orthoptera <- read.table("E:/analysis/orthoptera/data/orthoptera/lvl0300_biodiversity_data.csv", 
                          header = TRUE, sep = ";", dec = ",")
 
 # Replace number of observations and NAs to 1/0

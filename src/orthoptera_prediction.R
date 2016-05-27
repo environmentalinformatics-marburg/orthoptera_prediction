@@ -12,16 +12,18 @@ filepath_obsv <- paste0(filepath_base, "orthoptera/")
 filepath_results <- paste0(filepath_base, "rdata/")
 
 
+
 # Prepare observations ---------------------------------------------------------
 # Read observation dataset
 load(paste0(filepath_results, "preprocessing_data_obsv.RData"))
+
 
 # Replace number of observations and NAs to 1/0
 colnames(obsv)
 
 col_meta <- seq(1, 14)
 col_species <- seq(15, 179)
-col_sat <- seq(179, ncol(obsv))
+col_sat <- seq(180, ncol(obsv))
 
 obsv[, col_species][!is.na(obsv[, col_species])] <- "yes"
 obsv[, col_species][is.na(obsv[, col_species])] <- "no"
@@ -31,7 +33,9 @@ for(i in col_species){
 
 # Compile dataset containing complete cases only
 summary(obsv)
-obsv <- obsv[!is.na(obsv$MOD09GA_sur_refl_b01_1), ]
+# obsv[is.na(obsv$MOD09GA_sur_refl_b01_1), ]
+# obsv[is.na(obsv$MYD09GA_sur_refl_b01_1), ]
+# obsv <- obsv[!is.na(obsv$MOD09GA_sur_refl_b01_1), ]
 dim(obsv)
 summary(obsv)
 
@@ -71,6 +75,7 @@ orthoptera_resamples <- resamplingsByVariable(x = obsv_gpm@data$input,
 # load(file = paste0(filepath_results, "orthoptera_prediction_obsv_gpm.rda"))
 # load(file = paste0(filepath_results, "orthoptera_prediction_prevalent_species.rda"))
 # load(paste0(filepath_results, "orthoptera_prediction_orthoptera_resamples.rda"))
+# load(paste0(filepath_results, "orthoptera_prediction_prevalence.rda"))
 col_response <- prevalent_species
 orthoptera_trte <- splitMultResp(x = obsv_gpm@data$input, 
                                  response = col_response,
@@ -80,23 +85,41 @@ orthoptera_trte <- splitMultResp(x = obsv_gpm@data$input,
 
 # Evaluate prediction models ---------------------------------------------------
 # load(file = paste0(filepath_results, "orthoptera_prediction_obsv_gpm.rda"))
-# load(file = paste0(filepath_results, "orthoptera_prediction_prevalent_species.rda"))
+# load(file = paste0(filepath_results, "orthoptera_prediction_prevalence.rda"))
 # load(paste0(filepath_results, "orthoptera_prediction_orthoptera_resamples.rda"))
 # load(paste0(filepath_results, "orthoptera_prediction_orthoptera_trte.rda"))
-response <- prevalent_species
+# response <- prevalent_species
+response <- prevalence$RESPONSE[prevalence$OCCURENCE >= 29]
 independent <- obsv_gpm@meta$input$INDEPENDENT
 
-models <- trainModel(x = obsv_gpm, 
-                     response = response, independent = independent,
-                     resamples = orthoptera_trte,  mode = "ffs",
-                     n_var = seq(1,30,5), resample_nbr = 2, response_nbr = seq(2),
-                     mthd = "rf", seed_nbr = 11, cv_nbr = 2)
+# Check for NA and remove those columns
+independent <- independent[sapply(independent, function(x){!any(is.na(obsv_gpm@data$input[,x]))})]
 
+# models <- trainModel(x = obsv_gpm, 
+#                      response = response, independent = independent,
+#                      resamples = orthoptera_trte,  mode = "ffs",
+#                      n_var = seq(1,30,5), resample_nbr = 2, response_nbr = seq(2),
+#                      mthd = "rf", seed_nbr = 11, cv_nbr = 2)
+
+n_vars <- c(seq(1,15,1), seq(16, length(independent), 3))
 models <- trainModel(x = obsv_gpm, 
                      response = response, independent = independent,
-                     resamples = orthoptera_trte, n_var = seq(1,30,5),
-                     mthd = "rf", seed_nbr = 11, cv_nbr = 2)
-# save(models, file = "processed/models_rf-2016-03-04.rda")
+                     resamples = orthoptera_trte, n_var = n_vars,
+                     mthd = "rf", seed_nbr = 11, cv_nbr = 2,
+                     filepath_tmp = filepath_results)
+
+
+model_files <- list.files(filepath_results, pattern = glob2rx("gpm_trainModel_model_instances_*"),
+                          full.names = TRUE)
+
+models <- lapply(model_files, function(x){
+  load(x)
+  return(model_instances)
+})
+# save(models, file = paste0(filepath_results, "orthoptera_prediction_models_test.rda"))
+
+
+
 
 
 # models <- trainModel(x = orthoptera@data$input, 
@@ -113,7 +136,6 @@ models <- trainModel(x = obsv_gpm,
 # save(models, file = "processed/models_avnnet.rda")
 # load("processed/models_rf-2015-11-26.rda")
 # load("processed/models_rf.rda")
-load("processed/models_rf-2016-03-04.rda")
 
 var_imp <- compVarImp(models, scale = FALSE)
 
@@ -136,3 +158,29 @@ ggplot(data = tstat_mean, aes(x = OCCURENCE, y = Kappa_mean)) + geom_point() + g
 
 
 
+
+response_nbr <- seq(length(response))
+resample_nbr <- seq(length(orthoptera_trte[[1]]))
+response_instances <- lapply(response_nbr, function(i){
+  model_instances <- lapply(resample_nbr, function(j){
+    print(paste0("Computing resample instance ", j, 
+                 " of response instance ", i, "..."))
+    act_resample <- orthoptera_trte[[i]][[j]]
+    resp <- obsv_gpm@data$input[act_resample$training$SAMPLES, 
+                         act_resample$training$RESPONSE]
+    test <- grep("yes", resp)
+    return(test)
+    })
+  })    
+response_instances
+
+do.call("rbind", response_instances)
+
+t <- lapply(seq(5), function(y){
+  print(y)
+  res <- try(x>5)
+#    if(inherits(res, "try-error"))
+#    {
+#      res <- res
+#    }
+})
