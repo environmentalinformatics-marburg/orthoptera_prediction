@@ -82,17 +82,17 @@ load("processed/orthoptera_trte.rda")
 response <- prevalent_species
 independent <- orthoptera@meta$input$INDEPENDENT
 
-models <- trainModel(x = orthoptera, 
-                     response = response, independent = independent,
-                     resamples = orthoptera_trte,  mode = "ffs",
-                     n_var = seq(1,30,5), resample_nbr = 2, response_nbr = seq(2),
-                     mthd = "rf", seed_nbr = 11, cv_nbr = 2)
-
 # models <- trainModel(x = orthoptera, 
 #                      response = response, independent = independent,
-#                      resamples = orthoptera_trte, n_var = seq(1,30,5),
+#                      resamples = orthoptera_trte,  mode = "ffs",
+#                      n_var = seq(1,30,5), resample_nbr = 2, response_nbr = seq(2),
 #                      mthd = "rf", seed_nbr = 11, cv_nbr = 2)
-# save(models, file = "processed/models_rf-2016-03-04.rda")
+
+models <- trainModel(x = orthoptera, 
+                     response = response, independent = independent,
+                     resamples = orthoptera_trte, n_var = seq(1,30,5),
+                     mthd = "rf", seed_nbr = 11, cv_nbr = 2)
+# save(models, file = "E:/analysis/orthoptera/data/rdata/models_rf-2016-03-04.rda")
 
 
 # models <- trainModel(x = orthoptera@data$input, 
@@ -109,7 +109,7 @@ models <- trainModel(x = orthoptera,
 # save(models, file = "processed/models_avnnet.rda")
 # load("processed/models_rf-2015-11-26.rda")
 # load("processed/models_rf.rda")
-load("processed/models_rf-2016-03-04.rda")
+# load("E:/analysis/orthoptera/data/processed/models_rf-2016-03-04.rda")
 
 var_imp <- compVarImp(models, scale = FALSE)
 
@@ -131,4 +131,8 @@ ggplot(data = tstat_mean, aes(x = OCCURENCE, y = Kappa_mean)) + geom_point() + g
 # save(tstat, tstat_mean, file = "processed/tstat_mean_rf.rda")
 
 
-
+# ggplot(data = orthoptera@data$input, aes(x = Brachycrotaphus.sjostedti, y = greyval_band_05, fill = Brachycrotaphus.sjostedti)) + 
+#   geom_boxplot()
+# 
+# ggplot(data = obsv_gpm@data$input, aes(x = Brachycrotaphus.sjostedti, y = MYD09GA_sur_refl_b05_1/10000, fill = Brachycrotaphus.sjostedti)) + 
+#   geom_boxplot(notch = TRUE)
