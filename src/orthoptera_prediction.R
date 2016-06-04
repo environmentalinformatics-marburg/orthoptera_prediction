@@ -85,14 +85,16 @@ orthoptera_trte <- splitMultResp(x = obsv_gpm@data$input,
 # load(paste0(filepath_results, "orthoptera_prediction_orthoptera_trte.RData"))
 # Check for NA and remove those columns
 independent <- obsv_gpm@meta$input$INDEPENDENT
+# independent <- c(independent, "asl")
 independent <- independent[sapply(independent, function(x){!any(is.na(obsv_gpm@data$input[,x]))})]
 
+n_vars <- c(seq(1,15,1), seq(16, length(independent), 3))
 models <- trainModel(x = obsv_gpm, 
                      response = prevalence$RESPONSE, independent = independent,
                      resamples = orthoptera_trte,  mode = "ffs",
-                     n_var = seq(1,30,5), resample_nbr = 2, response_nbr = seq(2),
+                     n_var = n_vars, 
                      mthd = "rf", seed_nbr = 11, cv_nbr = 2)
-save(models, file = paste0(filepath_results, "orthoptera_prediction_models_rf_2016-05-28_ffs.RData"))
+save(models, file = paste0(filepath_results, "orthoptera_prediction_models_rf_2016-05-29_ffs.RData"))
 
 # n_vars <- c(seq(1,15,1), seq(16, length(independent), 3))
 # models <- trainModel(x = obsv_gpm, 
@@ -100,7 +102,7 @@ save(models, file = paste0(filepath_results, "orthoptera_prediction_models_rf_20
 #                      resamples = orthoptera_trte, n_var = n_vars,
 #                      mthd = "rf", seed_nbr = 11, cv_nbr = 2,
 #                      filepath_tmp = filepath_results)
-# save(models, file = paste0(filepath_results, "orthoptera_prediction_models_rf_2016-05-28_rfe.RData"))
+# save(models, file = paste0(filepath_results, "orthoptera_prediction_models_rf_2016-05-29_rfe_als.RData"))
 
 # model_files <- list.files(filepath_results, pattern = glob2rx("gpm_trainModel_model_instances_*"),
 #                           full.names = TRUE)
