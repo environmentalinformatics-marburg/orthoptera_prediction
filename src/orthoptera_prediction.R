@@ -56,7 +56,6 @@ prevalence <- data.frame(min_occurence[[2]])
 prevalence$RESPONSE <- rownames(prevalence)
 names(prevalence)[1] <- "OCCURENCE"
 rownames(prevalence) <- NULL
-prevalence <- prevalence[c(6,25),]
 # save(prevalence, file = paste0(filepath_results, "orthoptera_prediction_prevalence.RData"))
 
 
