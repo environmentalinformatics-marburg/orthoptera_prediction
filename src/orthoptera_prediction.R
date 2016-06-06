@@ -86,45 +86,16 @@ orthoptera_trte <- splitMultResp(x = obsv_gpm@data$input,
 independent <- obsv_gpm@meta$input$INDEPENDENT
 # independent <- c(independent, "asl")
 independent <- independent[sapply(independent, function(x){!any(is.na(obsv_gpm@data$input[,x]))})]
+independent <- independent[34:39]
 
-n_vars <- c(seq(1,15,1), seq(16, length(independent), 3))
-models <- trainModel(x = obsv_gpm, 
+n_vars <- c(seq(length(independent)))
+models <- trainModel(x = obsv_gpm,
                      response = prevalence$RESPONSE, independent = independent,
-                     resamples = orthoptera_trte,  mode = "ffs",
-                     n_var = n_vars, 
-                     mthd = "rf", seed_nbr = 11, cv_nbr = 2)
-save(models, file = paste0(filepath_results, "orthoptera_prediction_models_rf_2016-05-29_ffs.RData"))
-
-# n_vars <- c(seq(1,15,1), seq(16, length(independent), 3))
-# models <- trainModel(x = obsv_gpm, 
-#                      response = prevalence$RESPONSE, independent = independent,
-#                      resamples = orthoptera_trte, n_var = n_vars,
-#                      mthd = "rf", seed_nbr = 11, cv_nbr = 2,
-#                      filepath_tmp = filepath_results)
-# save(models, file = paste0(filepath_results, "orthoptera_prediction_models_rf_2016-05-29_rfe_als.RData"))
-
-# model_files <- list.files(filepath_results, pattern = glob2rx("gpm_trainModel_model_instances_*"),
-#                           full.names = TRUE)
-# models <- lapply(model_files, function(x){
-#   load(x)
-#   return(model_instances)
-# })
-
-
-# models <- trainModel(x = orthoptera@data$input, 
-#                      response = response, independent = independent,
-#                      resamples = orthoptera_trte, n_var = seq(1,30,2),
-#                      response_nbr = seq(5),
-#                      mthd = "avNNet")
-# 
-# 
-# models <- trainModel(x = orthoptera@data$input, 
-#                      response = response, independent = independent,
-#                      resamples = orthoptera_trte, n_var = seq(1,30,2),
-#                      mthd = "avNNet")
-# save(models, file = "processed/models_avnnet.RData")
-# load("processed/models_rf-2015-11-26.RData")
-# load("processed/models_rf.RData")
+                     resamples = orthoptera_trte, n_var = n_vars,
+                     mthd = "rf", seed_nbr = 11, cv_nbr = 5,
+                     var_selection = "sd",
+                     response_nbr = c(1,7), resample_nbr = c(3,4),
+                     filepath_tmp = filepath_results)
 
 var_imp <- compVarImp(models, scale = FALSE)
 
