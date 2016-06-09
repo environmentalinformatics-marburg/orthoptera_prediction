@@ -30,7 +30,7 @@ projection(shp) <- CRS("+proj=utm +zone=37 +south +ellps=WGS84 +datum=WGS84 +uni
 # mapview(shp)
 
 
-# Read Landsat datasets and attach to observations
+# Read Landsat spatial datasets and attach to observations
 landsat_files <- list.files(filepath_landsat, 
                             pattern = glob2rx("gls2000_pca01_scale_hist*.tif"), 
                             full.names = TRUE)
@@ -94,6 +94,22 @@ obsv <- obsv[, c(1:grep("diff_days_nocloud", colnames(obsv)),
 all.equal(gsub("-", "", substring(obsv$date_nocloud, 1, 8), "-"),
           as.character(obsv$date_modis))
 # save(modis_obsv, file = paste0(filepath_results, "preprocessing_data_modis_obsv.RData"))
+
+# Write dataset
+write.table(obsv, 
+            file = paste0(filepath_obsv, "orthoptera_sat.csv"),
+            sep = ",", dec = ".", row.names = FALSE)
+save(obsv, file = paste0(filepath_results, "preprocessing_data_obsv.RData"))
+
+# Read Landsat spectral datasets and attach to observations (came in to a later analysis stage)
+landsat_files <- list.files(filepath_landsat, 
+                            pattern = glob2rx("gls2000.tif"), 
+                            full.names = TRUE)
+landsat <- stack(landsat_files)
+shp_tf <- spTransform(shp, projection(landsat))
+landsat_vals <- extract(landsat, shp_tf)
+colnames(landsat_vals) <- paste0("gls2000_", c(seq(5), 7))
+obsv <- cbind(obsv, landsat_vals)
 
 # Write dataset
 write.table(obsv, 

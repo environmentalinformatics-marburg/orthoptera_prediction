@@ -17,18 +17,17 @@ load(paste0(filepath_results, "orthoptera_prediction_orthoptera_resamples.RData"
 load(paste0(filepath_results, "orthoptera_prediction_orthoptera_trte.RData"))
 
 # Check for NA and remove those columns
-# Check for NA and remove those columns
 independent <- obsv_gpm@meta$input$INDEPENDENT
-# independent <- c(independent, "asl")
+independent <- c(independent, "asl")
 independent <- independent[sapply(independent, function(x){!any(is.na(obsv_gpm@data$input[,x]))})]
-independent <- independent[1:33]
 
 n_vars <- c(seq(length(independent)))
 models <- trainModel(x = obsv_gpm,
                      response = prevalence$RESPONSE, independent = independent,
                      resamples = orthoptera_trte, n_var = n_vars,
-                     mthd = "nnet", seed_nbr = 11, cv_nbr = 5,
+                     mthd = "rf", seed_nbr = 11, cv_nbr = 5,
+                     var_selection = "sd",
+                     response_nbr = c(26:39), 
                      filepath_tmp = filepath_results)
-save(models, file = paste0(filepath_results, "orthoptera_prediction_models_nnet_2016-06-05_rfe_242.RData"))
-load(paste0(filepath_results, "gpm_trainModel_model_instances_001.RData"))
+save(models, file = paste0(filepath_results, "orthoptera_prediction_models_rf_2016-06-06_rfe_sd_lspc_lspt_mspc_als.RData"))
 

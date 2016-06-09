@@ -1,5 +1,6 @@
 # Libraries --------------------------------------------------------------------
-# library(gpm)
+# devtools::install_github("environmentalinformatics-marburg/gpm")
+library(gpm)
 library(ggplot2)
 library(ggmap)
 library(mapview)
@@ -10,9 +11,10 @@ library(reshape2)
 library(quantreg)
 library(latticeExtra)
 
-# Read data --------------------------------------------------------------------
+
+# Set path ---------------------------------------------------------------------
 if(Sys.info()["sysname"] == "Windows"){
-  filepath_base <- "E:/analysis/orthoptera/data/"
+  filepath_base <- "F:/analysis/orthoptera/data/"
 } else {
   filepath_base <- "/media/tnauss/myWork/analysis/orthoptera/data/"
 }
@@ -23,86 +25,22 @@ filepath_traits <- paste0(filepath_base, "traits/")
 filepath_figures <- paste0(filepath_base, "figures/")
 
 
-load(paste0(filepath_results, "orthoptera_prediction_obsv_gpm.RData"))
+# Read data --------------------------------------------------------------------
 load(paste0(filepath_results, "orthoptera_prediction_prevalence.RData"))
-load(paste0(filepath_results, "orthoptera_prediction_orthoptera_resamples.RData"))
-load(paste0(filepath_results, "orthoptera_prediction_orthoptera_trte.RData"))
-load(paste0(filepath_results, "orthoptera_prediction_models_rf_2016-05-28_rfe.RData"))
+load(paste0(filepath_results, "orthoptera_figures_trait_subsets_01.RData"))
+load(paste0(filepath_results, "orthoptera_figures_trait_subsets_02.RData"))
+
+models_sub <- append(models_sub_01, models_sub_02)
+tstat_sub <- append(tstat_sub_01, tstat_sub_02)
+tstat_mean_sub <- append(tstat_mean_sub_01, tstat_mean_sub_02)
+tstat_merged_sub <- rbind(tstat_merged_sub_01, tstat_merged_sub_02)
+
+rm(models_sub_01, models_sub_02, tstat_sub_01, tstat_sub_02,
+   tstat_merged_sub_01, tstat_merged_sub_02)
+
 dem <- raster(paste0(filepath_obsv, "DEM_UTM37S_WGS84_30m_Hemp.tif"))
 traits <- read.table(paste0(filepath_traits, "Orthoptera_10_11_2015.csv"),
                      header = TRUE, sep = ";", dec = ".")
-
-
-# Reduce model dataset to species for which traits are available----------------
-trait_names <- gsub("\\ ", ".", traits$Name)
-
-trait_names[!(trait_names %in% prevalence$RESPONSE)]
-trait_names[trait_names == "Cyrtacanthacris.tatarica.tatarica"] <- "Cyrtacanthacris.tatarica"
-traits$Name <- trait_names
-
-trait_names <- unique(traits$Name)
-del_nbr <- lapply(seq(length(models)), function(x){
-  species <- models[[x]][[1]]$response
-  if(species %in% trait_names){
-    del_nbr <- x
-  } else {
-    del_nbr <- NA
-  }
-  return(del_nbr)
-})
-del_nbr <- unlist(del_nbr)
-del_nbr <- del_nbr[!is.na(del_nbr)]
-models_subset <- models[del_nbr]
-
-final_species <- lapply(seq(length(models_subset)), function(x){
-  models_subset[[x]][[1]]$response
-})
-final_species <- unlist(final_species)
-
-del_nbr <- lapply(seq(length(orthoptera_trte)), function(x){
-  species <- orthoptera_trte[[x]][[1]]$training$RESPONSE
-  if(species %in% final_species){
-    del_nbr <- x
-  } else {
-    del_nbr <- NA
-  }
-  return(del_nbr)
-})
-del_nbr <- unlist(del_nbr)
-del_nbr <- del_nbr[!is.na(del_nbr)]
-orthoptera_trte_subset <- orthoptera_trte[del_nbr]
-
-obsv_gpm_subset <- obsv_gpm
-obsv_gpm_subset@meta$input$RESPONSE <- obsv_gpm_subset@meta$input$RESPONSE[obsv_gpm_subset@meta$input$RESPONSE %in% final_species]
-obsv_gpm_subset@data$input <- obsv_gpm_subset@data$input[colnames(obsv_gpm_subset@data$input) %in% unlist(obsv_gpm_subset@meta$input)]
-
-
-# Calculate basic model statistics ---------------------------------------------
-var_imp <- compVarImp(models_subset, scale = FALSE)
-var_imp_scale <- compVarImp(models_subset, scale = TRUE)
-var_imp_plot <- plotVarImp(var_imp)
-var_imp_heat <- plotVarImpHeatmap(var_imp_scale, xlab = "Species", ylab = "Band")
-tstat <- compContTests(models_subset, mean = TRUE)
-tstat_mean <- merge(tstat[[1]], prevalence, by.x = "Response", by.y = "RESPONSE")
-tstat_mean[order(tstat_mean$Kappa_mean, decreasing = TRUE),]
-# save(var_imp, var_imp_scale, tstat, tstat_mean, 
-#      file = paste0(filepath_results, "orthoptera_figures_var_imp_tstat.RData"))
-# load(paste0(filepath_results, "orthoptera_figures_var_imp_tstat.RData"))
-
-
-dfx <- lapply(orthoptera_trte_subset, function(x){
-  dfy <- lapply(x, function(y){
-    c(y$training$SAMPLES, y$testing$SAMPLES)
-  })
-  unique(unlist(dfy))
-})
-rows <- unique(unlist(dfx))
-
-sample <- obsv_gpm_subset@data$input[rows, ]
-
-sample$date_observation <- as.Date(sample$date_observation, format="%Y-%j")
-sample$year <- as.numeric(format(sample$date_observation, "%Y"))
-
 
 
 # sample_names <- gsub("\\.", " ", colnames(sample)) 
@@ -129,7 +67,6 @@ sample$year <- as.numeric(format(sample$date_observation, "%Y"))
 #   "Gymnobothrus temporalis flexuosus"
 
 
-
 # Create maps ------------------------------------------------------------------
 map_extent <- get_map(location = c(36.93865,
                                    -3.454621,
@@ -149,7 +86,7 @@ obs <- geom_point(aes(x = lon,
                       size = 2,
                       colour = nr.of.species),
                   show.legend = FALSE,
-                  data = sample)
+                  data = obsv_samples)
 
 colourscale <- scale_colour_gradient(low = "white", 
                                      high = "darkgreen", 
@@ -169,13 +106,12 @@ png(paste0(filepath_figures, "fig_01_map.png"),
 map + obs + colourscale + labels_map_01 + style_map_01 + theme_bw()
 graphics.off()
 
-
 obs <- geom_point(aes(x = lon,
                       y = lat,
                       size = 1,
                       colour = nr.of.species),
                   show.legend = FALSE,
-                  data = sample)
+                  data = obsv_samples)
 
 png(paste0(filepath_figures, "fig_a01_maps.png"), 
     width = 1024 * 6, 
@@ -187,54 +123,151 @@ graphics.off()
 
 
 # Elevation statistics ---------------------------------------------------------
-sample_utm <- sample
-coordinates(sample_utm) <- ~lon+lat
-projection(sample_utm) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs ")
-sample_utm <- spTransform(sample_utm, projection(dem))
+obsv_samples_utm <- obsv_samples
+coordinates(obsv_samples_utm) <- ~lon+lat
+projection(obsv_samples_utm) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs ")
+obsv_samples_utm <- spTransform(obsv_samples_utm, projection(dem))
 
-sample_utm@data$masl <- extract(dem, sample_utm)
+obsv_samples_utm@data$masl <- extract(dem, obsv_samples_utm)
 
-summary(sample_utm@data$masl)
-quantile(sample_utm@data$masl, probs = seq(0, 1, 0.1), na.rm = TRUE)
+summary(obsv_samples_utm@data$masl)
+quantile(obsv_samples_utm@data$masl, probs = seq(0, 1, 0.1), na.rm = TRUE)
 
 
 # NDVI statistics --------------------------------------------------------------
-sample_utm@data$NDVI <- 
-  (sample_utm@data$MYD09GA_sur_refl_b02_1 - sample_utm@data$MYD09GA_sur_refl_b01_1) / 
-  (sample_utm@data$MYD09GA_sur_refl_b02_1 + sample_utm@data$MYD09GA_sur_refl_b01_1)
+obsv_samples_utm@data$NDVI <- 
+  (obsv_samples_utm@data$MYD09GA_sur_refl_b02_1 - obsv_samples_utm@data$MYD09GA_sur_refl_b01_1) / 
+  (obsv_samples_utm@data$MYD09GA_sur_refl_b02_1 + obsv_samples_utm@data$MYD09GA_sur_refl_b01_1)
 
-summary(sample_utm@data$NDVI)
-quantile(sample_utm@data$NDVI, probs = seq(0, 1, 0.1), na.rm = TRUE)
+summary(obsv_samples_utm@data$NDVI)
+quantile(obsv_samples_utm@data$NDVI, probs = seq(0, 1, 0.01), na.rm = TRUE)
 
-gsub("\\.", " ", prevalence$RESPONSE) 
-
-quantile(sample_utm@data$diff_days_nocloud, seq(0, 1, 0.05))
+quantile(obsv_samples_utm@data$diff_days_nocloud, seq(0, 1, 0.05))
 
 
 # Prediction performance -------------------------------------------------------
-plot_scores <- plotClassPerformance(tstat, scores = c("Kappa", "ETS"))
+tstat_merged_sub_boxplot <- tstat_merged_sub[grepl("Kappa_mean", tstat_merged_sub$variable),]
+tstat_merged_sub_boxplot$variable <- factor(tstat_merged_sub_boxplot$variable,
+                                            levels = as.character(unique(tstat_merged_sub_boxplot$variable))[order(as.character(unique(tstat_merged_sub_boxplot$variable)), decreasing = FALSE)])
+
+ggplot(data = tstat_merged_sub_boxplot[grepl("Kappa_mean", tstat_merged_sub_boxplot$variable),], 
+       aes(x = variable, y = value, fill = variable)) + 
+  geom_boxplot(notch = TRUE) + 
+  theme(axis.text.x=element_text(angle = -90, hjust = 0), legend.position = "none")
+
+perf <- do.call("rbind", lapply(unique(as.character(tstat_merged_sub_boxplot$variable)), function(x){
+  data.frame(var = x,
+             med = median(tstat_merged_sub_boxplot$value[as.character(tstat_merged_sub_boxplot$variable) == x]))
+}))
+perf[order(perf$med, decreasing = TRUE),]  
+
+
+levels <- tstat_merged_sub$Response[
+  tstat_merged_sub$variable == "Kappa_mean_mspc"][
+    order(tstat_merged_sub$value[tstat_merged_sub$variable == "Kappa_mean_mspc"],
+          decreasing = FALSE)]
+tstat_merged_sub$Response <- factor(tstat_merged_sub$Response, levels = levels)
+
+# ggplot(data = tstat_merged_sub[grepl("Kappa_mean", tstat_merged_sub$variable),], 
+#        aes(x = Response, y = value, color = variable, group = variable)) + 
+#   geom_line() + 
+#   coord_flip()
+
+testvar <- c("Kappa_mean_mspc", "Kappa_mean_lspc_lspt_mspc", "Kappa_mean_mspc_lspt_asl")
+plot_top3 <- ggplot(data = tstat_merged_sub[tstat_merged_sub$variable %in% testvar, ], 
+                    aes(x = Response, y = value, color = variable, group = variable)) + 
+  geom_line() + 
+  coord_flip()
+
+
+plot_scors <- lapply(tstat_sub, function(x){
+  plotClassPerformance(x, scores = c("Kappa", "ETS"))  
+})
+
+plot_scors$tstat_mspc
+plot_scors$tstat_lspc_lspt_mspc
+plot_scors$tstat_mspc_lspt_asl
+
 
 png(paste0(filepath_figures, "fig_02_scores.png"), 
     width = 1024 * 6, 
     height = 748 * 6, 
     units = "px", 
     res = 600)
-plot_scores
+plot_top3
+graphics.off()
+
+
+png(paste0(filepath_figures, "fig_03_scores.png"), 
+    width = 1024 * 6, 
+    height = 748 * 6, 
+    units = "px", 
+    res = 600)
+plot_scors$tstat_mspc
+graphics.off()
+
+
+# Variable importance ----------------------------------------------------------
+var_imp <- lapply(models_sub, function(x){
+  compVarImp(x, scale = FALSE)
+})
+
+var_imp_scale <- lapply(models_sub, function(x){
+  compVarImp(x, scale = TRUE)
+})
+
+var_imp_plot <- lapply(var_imp, function(x){
+  plotVarImp(x)
+})
+
+var_imp_heat <- lapply(var_imp_scale, function(x){
+  plotVarImpHeatmap(x, xlab = "Species", ylab = "Band")
+})
+
+
+
+
+png(paste0(filepath_figures, "fig_05_variable_importance_01.png"), 
+    width = 1024 * 6, 
+    height = 748 * 6, 
+    units = "px", 
+    res = 600)
+var_imp_heat$mspc
+graphics.off()
+
+png(paste0(filepath_figures, "fig_05_variable_importance_02.png"), 
+    width = 1024 * 6, 
+    height = 748 * 6, 
+    units = "px", 
+    res = 600)
+var_imp_heat$lspc_lspt_mspc
+graphics.off()
+
+png(paste0(filepath_figures, "fig_05_variable_importance_03.png"), 
+    width = 1024 * 6, 
+    height = 748 * 6, 
+    units = "px", 
+    res = 600)
+var_imp_heat$mspc_lspt_asl
 graphics.off()
 
 
 # Test dependency of prediction accuracy ---------------------------------------
-test <- lapply(models_subset, function(x){
+obsv_samples_utm@data$pid <- paste0(obsv_samples_utm@data$plot, "_", obsv_samples_utm@data$date_observation)
+
+test <- lapply(models_sub$mspc, function(x){
   act_test <- lapply(x, function(y){
     if(inherits(y$model, "try-error")){
       NULL
     } else {
+      pid <- data.frame(pid = paste0(y$testing$META$plot, "_", as.Date(y$testing$META$date_observation, format="%Y-%j")))
+      ndvi = merge(pid, obsv_samples_utm@data, by = "pid")$NDVI
       df <- data.frame(TARGET = y$response,
                        RESPONSE = y$testing$RESPONSE,
                        PREDICTION = y$testing$PREDICTED$pred,
-                       NDVI = (y$testing$INDEPENDENT$MYD09GA_sur_refl_b02_1 - y$testing$INDEPENDENT$MYD09GA_sur_refl_b01_1) / 
-                         (y$testing$INDEPENDENT$MYD09GA_sur_refl_b02_1 + y$testing$INDEPENDENT$MYD09GA_sur_refl_b01_1),
+                       NDVI = ndvi,
                        y$testing$META)
+      return(df)
     }  
   })
   do.call("rbind", act_test)
@@ -264,52 +297,53 @@ colnames(rainfall_mean) <- c("Response", "rainfall")
 species_mean <- aggregate(test_utm@data$nr.of.species, by = list(test_utm@data$TARGET), FUN = "mean")
 colnames(species_mean) <- c("Response", "nr.of.species")
 
-tstat_mean <- merge(tstat[[1]], prevalence, by.x = "Response", by.y = "RESPONSE")
-tstat_mean <- merge(tstat_mean, ndvi_mean, by = "Response")
-tstat_mean <- merge(tstat_mean, asl_mean, by = "Response")
-tstat_mean <- merge(tstat_mean, rainfall_mean, by = "Response")
-tstat_mean <- merge(tstat_mean, species_mean, by = "Response")
+test_mean <- merge(tstat_sub$tstat_mspc[[1]], prevalence, by.x = "Response", by.y = "RESPONSE")
+test_mean <- merge(test_mean, ndvi_mean, by = "Response")
+test_mean <- merge(test_mean, asl_mean, by = "Response")
+test_mean <- merge(test_mean, rainfall_mean, by = "Response")
+test_mean <- merge(test_mean, species_mean, by = "Response")
 
 nv <- function(x){
   (x - min(x)) * (1 - 0) / (max(x) - min(x)) + 0
 }
 
-tstat_mean$OCCURENCE_scaled <- nv(tstat_mean$OCCURENCE)
-tstat_mean$NDVI_scaled <- nv(tstat_mean$NDVI)
-tstat_mean$asl_scaled <- nv(tstat_mean$asl)
-tstat_mean$rainfall_scaled <- nv(tstat_mean$rainfall)
-tstat_mean$nr.of.species_scaled <- nv(tstat_mean$nr.of.species)
+test_mean$OCCURENCE_scaled <- nv(test_mean$OCCURENCE)
+test_mean$NDVI_scaled <- nv(test_mean$NDVI)
+test_mean$asl_scaled <- nv(test_mean$asl)
+test_mean$rainfall_scaled <- nv(test_mean$rainfall)
+test_mean$nr.of.species_scaled <- nv(test_mean$nr.of.species)
 
-tstat_mean_melt <- melt(tstat_mean[, colnames(tstat_mean) %in%
-                                     c("Kappa_mean", "OCCURENCE_scaled", 
-                                       "NDVI_scaled", "asl_scaled", 
-                                       "rainfall_scaled", 
-                                       "nr.of.species_scaled")], 
-                        id.vars = "Kappa_mean")
+test_mean_melt <- melt(test_mean[, colnames(test_mean) %in%
+                                   c("Kappa_mean", "OCCURENCE_scaled", 
+                                     "asl_scaled", 
+                                     "NDVI_scaled",
+                                     "rainfall_scaled", 
+                                     "nr.of.species_scaled")], 
+                       id.vars = "Kappa_mean")
 
-png(paste0(filepath_figures, "fig_03_scores_dependency.png"), 
+png(paste0(filepath_figures, "fig_04_scores_dependency.png"), 
     width = 1024 * 6, 
     height = 748 * 6, 
     units = "px", 
     res = 600)
-ggplot(data = tstat_mean_melt, aes(x = value, y = Kappa_mean)) + 
+ggplot(data = test_mean_melt, aes(x = value, y = Kappa_mean)) + 
   geom_point() + 
   geom_smooth() + 
   facet_wrap(~variable,  scales = "free_y")
 graphics.off()
 
-# ggplot(data = tstat_mean, aes(x = OCCURENCE, y = Kappa_mean)) + geom_point() + geom_smooth()
-# ggplot(data = tstat_mean, aes(x = NDVI, y = Kappa_mean)) + geom_point() + geom_smooth()
-# ggplot(data = tstat_mean, aes(x = asl, y = Kappa_mean)) + geom_point() + geom_smooth()
-# ggplot(data = tstat_mean, aes(x = rainfall, y = Kappa_mean)) + geom_point() + geom_smooth()
-# ggplot(data = tstat_mean, aes(x = nr.of.species,  y= Kappa_mean)) + geom_point() + geom_smooth()
+# ggplot(data = test_mean, aes(x = OCCURENCE, y = Kappa_mean)) + geom_point() + geom_smooth()
+# ggplot(data = test_mean, aes(x = NDVI, y = Kappa_mean)) + geom_point() + geom_smooth()
+# ggplot(data = test_mean, aes(x = asl, y = Kappa_mean)) + geom_point() + geom_smooth()
+# ggplot(data = test_mean, aes(x = rainfall, y = Kappa_mean)) + geom_point() + geom_smooth()
+# ggplot(data = test_mean, aes(x = nr.of.species,  y= Kappa_mean)) + geom_point() + geom_smooth()
 
 test_utm_melt <- 
   melt(test_utm@data[, colnames(test_utm@data) %in% 
-                       c("TARGET", "performance", "NDVI", "asl", "rainfall", "nr.of.species")],
+                       c("TARGET", "performance", "asl", "NDVI", "rainfall", "nr.of.species")],
        id.var = c("TARGET", "performance"))
 
-png("figures/fig_04_scores_dependency_boxplots.png", 
+png(paste0(filepath_figures, "fig_06_scores_dependency_boxplots.png"), 
     width = 1024 * 6, 
     height = 748 * 6, 
     units = "px", 
@@ -325,7 +359,7 @@ graphics.off()
 #     height = 748 * 6, 
 #     units = "px", 
 #     res = 600)
-# ggplot(data = test_utm@data, aes(x = TARGET, y = nr.of.species, fill = performance)) + 
+# ggplot(data = test_utm@data, aes(x = TARGET, y = nr.of.species, fill = performance)) +
 #   geom_boxplot(notch = TRUE) +
 #   theme(axis.text.x=element_text(angle = -90, hjust = 0))
 # graphics.off()
@@ -335,20 +369,10 @@ graphics.off()
 #     height = 748 * 6, 
 #     units = "px", 
 #     res = 600)
-# ggplot(data = test_utm@data, aes(x = TARGET, y = masl, fill = performance)) + 
+# ggplot(data = test_utm@data, aes(x = TARGET, y = masl, fill = performance)) +
 #   geom_boxplot(notch = TRUE) +
 #   theme(axis.text.x=element_text(angle = -90, hjust = 0))
 # graphics.off()
-
-
-# Variable importance ----------------------------------------------------------
-png("figures/fig_05_variable_importance.png", 
-    width = 1024 * 6, 
-    height = 748 * 6, 
-    units = "px", 
-    res = 600)
-plotVarImpHeatmap(var_imp, xlab = "Species", ylab = "Band")
-graphics.off()
 
 
 # Prediction dependency from functional diversity ------------------------------
@@ -388,13 +412,14 @@ scatter3D <- function(x, y, z,
   return(plot)
 }
 
+tstat_best <- tstat_mean_sub$tstat_mspc_mean
 # Adjust test statistics
-tstat_mean$Response <- gsub("\\.", " ", tstat_mean$Response) 
-tstat_mean$Response[tstat_mean$Response == "Cyrtacanthacris tatarica"] <-
+tstat_best$Response <- gsub("\\.", " ", tstat_best$Response) 
+tstat_best$Response[tstat_best$Response == "Cyrtacanthacris tatarica"] <-
   "Cyrtacanthacris tatarica tatarica"
-tstat_mean$Response[tstat_mean$Response == "Gymnobothrus flexuosus"] <-
+tstat_best$Response[tstat_best$Response == "Gymnobothrus flexuosus"] <-
   "Gymnobothrus temporalis flexuosus"
-tstat_mean$Response_SHORT <- substr(tstat_mean$Response, 1, 4)
+tstat_best$Response_SHORT <- substr(tstat_best$Response, 1, 4)
 
 # Adjust prevalence information
 prevalence$RESPONSE <- gsub("\\.", " ", prevalence$RESPONSE) 
@@ -403,14 +428,12 @@ prevalence$RESPONSE[prevalence$RESPONSE == "Cyrtacanthacris tatarica"] <-
 prevalence$RESPONSE[prevalence$RESPONSE == "Gymnobothrus flexuosus"] <-
   "Gymnobothrus temporalis flexuosus"
 
-traits <- read.table(paste0(filepath_traits, "Orthoptera_10_11_2015.csv"),
-                     header = TRUE, sep = ";", dec = ".")
-traits <- traits[traits$Name %in% tstat_mean$Response, ]
+traits <- traits[traits$Name %in% tstat_best$Response, ]
 traits[, 5:15] <- log(traits[, 5:15])
 traits_mean <- aggregate(traits[, 5:15], by = list(traits$Name), FUN = mean,
                          na.rm = TRUE)
 # Combine model statistics and traits and analyse information
-expl <- cbind(tstat_mean[tstat_mean$Response %in% unique(traits_mean$Group.1),],
+expl <- cbind(tstat_best[tstat_best$Response %in% unique(traits_mean$Group.1),],
               traits_mean, by.x = "Response", by.y = "Group.1")
 expl <- cbind(expl, prevalence[prevalence$RESPONSE %in% unique(expl$Response),],
               by.x = "Response", by.y = "RESPONSE")
@@ -427,7 +450,14 @@ trait_names <- c("Gesamtlaenge", "PronotLaenge", "PronotBreite",
                  "Tibiahinten", "Femurmitte", "Femurvorne")
 pca <- prcomp(expl[, trait_names], center = TRUE, scale = FALSE)
 
+
+png(paste0(filepath_figures, "fig_07_pca_biplot.png"), 
+    width = 1024 * 6, 
+    height = 748 * 6, 
+    units = "px", 
+    res = 600)
 biplot(pca,  choices = c(1,2))
+graphics.off()
 
 
 expl_pca <- cbind(expl, pca$x)
@@ -449,9 +479,9 @@ values <- c("KAPPA_MEAN", "POD_MEAN", "FAR_MEAN", "POFD_MEAN",
 # Visual analysis
 colors <- clrs_hcl(nrow(expl_pca))
 
-rq <- rq(expl_pca[, "Kappa_mean"] ~ expl_pca[, "PC1"], tau = 0.5)
+rq <- rq(expl_pca[, "Kappa_mean"] ~ expl_pca[, "PC1"], tau = 0.75)
 
-png("figures/fig_05_kappa_pc3.png", 
+png("figures/fig_08_kappa_pca.png", 
     width = 1024 * 6, 
     height = 748 * 6, 
     units = "px", 
@@ -463,7 +493,7 @@ xyplot(expl_pca[, "Kappa_mean"] ~ expl_pca[, "PC1"], data = expl_pca,
          panel.xyplot(x, y, pch=19, cex = 2, col=fill, grid = TRUE)
          panel.text(x, y-0.02, cex = 0.75, labels = expl_pca$Response)
          panel.lmline(x, y, ...)
-         panel.abline(rq$coefficients, col = "red")
+         # panel.abline(rq$coefficients, col = "red")
        },
        par.settings = custom.theme(region = colors, alpha = 1.0),
        legend = list(
@@ -474,17 +504,15 @@ xyplot(expl_pca[, "Kappa_mean"] ~ expl_pca[, "PC1"], data = expl_pca,
                                     max(expl_pca$OCCURENCE), 
                                     length.out = nrow(expl_pca)),
                            width = 1, col = colors)))))
-
 graphics.off()
 
-  expl_pca_rq <- rq(expl_pca[, "Kappa_mean"] ~ expl_pca[, "PC1"], 
-                    tau = seq(0.05, 0.95, 0.05))
-  plot(expl_pca_rq)
-  plot(summary(expl_pca_rq), ylim = c(-0.5, 0.5))
+expl_pca_rq <- rq(expl_pca[, "Kappa_mean"] ~ expl_pca[, "PC1"], 
+                  tau = seq(0.05, 0.95, 0.05))
+plot(expl_pca_rq)
+plot(summary(expl_pca_rq), ylim = c(-0.5, 0.5))
 
-  expl_pca_rq <- rq(expl_pca[, "Kappa_mean"] ~ expl_pca[, "PC1"], 
-                    tau = seq(0.05, 0.95, 0.05))
-  summary(expl_pca_rq)
+expl_pca_rq <- rq(expl_pca[, "Kappa_mean"] ~ expl_pca[, "PC1"], 
+                  tau = seq(0.05, 0.95, 0.05))
+summary(expl_pca_rq)
 
-  
-  
+

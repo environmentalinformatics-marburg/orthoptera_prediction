@@ -30,4 +30,3 @@ models <- trainModel(x = obsv_gpm,
                      var_selection = "sd",
                      filepath_tmp = filepath_results)
 save(models, file = paste0(filepath_results, "orthoptera_prediction_models_rf_2016-06-06_rfe_sd_247.RData"))
-load(paste0(filepath_results, "gpm_trainModel_model_instances_001.RData"))

@@ -20,7 +20,7 @@ load(paste0(filepath_results, "orthoptera_prediction_orthoptera_trte.RData"))
 independent <- obsv_gpm@meta$input$INDEPENDENT
 # independent <- c(independent, "asl")
 independent <- independent[sapply(independent, function(x){!any(is.na(obsv_gpm@data$input[,x]))})]
-independent <- independent[1:33]
+independent <- independent[-(34:39)]
 
 n_vars <- c(seq(length(independent)))
 models <- trainModel(x = obsv_gpm,
@@ -29,4 +29,4 @@ models <- trainModel(x = obsv_gpm,
                      mthd = "rf", seed_nbr = 11, cv_nbr = 5,
                      var_selection = "sd",
                      filepath_tmp = filepath_results)
-save(models, file = paste0(filepath_results, "orthoptera_prediction_models_rf_2016-06-06_rfe_sd_246.RData"))
+save(models, file = paste0(filepath_results, "orthoptera_prediction_models_rf_2016-06-06_rfe_sd_lspc_lspt.RData"))
