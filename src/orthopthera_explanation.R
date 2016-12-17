@@ -1,4 +1,4 @@
-setwd("D:/active/orthoptera/data")
+setwd("E:/analysis/orthoptera/data")
 
 # Libraries --------------------------------------------------------------------
 # library(gpm)

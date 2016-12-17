@@ -36,12 +36,14 @@ tstat_mean_sub <- append(tstat_mean_sub_01, tstat_mean_sub_02)
 tstat_merged_sub <- rbind(tstat_merged_sub_01, tstat_merged_sub_02)
 
 rm(models_sub_01, models_sub_02, tstat_sub_01, tstat_sub_02,
+   tstat_mean_sub_01, tstat_mean_sub_02, 
    tstat_merged_sub_01, tstat_merged_sub_02)
 
 dem <- raster(paste0(filepath_obsv, "DEM_UTM37S_WGS84_30m_Hemp.tif"))
 traits <- read.table(paste0(filepath_traits, "Orthoptera_10_11_2015.csv"),
                      header = TRUE, sep = ";", dec = ".")
-
+band_names <- read.table(paste0(filepath_obsv, "band_names.csv"), header = TRUE,
+                         sep = ";")
 
 # sample_names <- gsub("\\.", " ", colnames(sample)) 
 # sample_names[sample_names == "Cyrtacanthacris tatarica"] <-
@@ -184,6 +186,65 @@ plot_scors <- lapply(tstat_sub, function(x){
   plotClassPerformance(x, scores = c("Kappa", "ETS"))  
 })
 
+
+plot_scors <- lapply(tstat_sub, function(x){
+  plotClassPerformance(x, scores = c("Kappa"))  
+})
+
+
+
+
+modstat <- tstat_sub$tstat_mspc
+scores_mean <- paste0(scores, "_mean")
+df_mean <- modstat[[1]]
+df_mean$Response <- 
+  factor(df_mean$Response, levels = df_mean$Response[order(df_mean$Kappa_mean, decreasing = FALSE)])
+df_mean_melt <- melt(df_mean, id.vars = "Response")
+
+ggplot(data = df_mean_melt[df_mean_melt$variable %in% scores_mean, ], 
+       aes(x = Response, y = value, color = variable, group = variable)) + 
+  geom_point() + 
+  geom_line(colour = "#1f78b4", size = 1.5) + 
+  geom_hline(yintercept = c(0.20, 0.40), colour="#b2df8a", linetype = "longdash") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 15, face = "italic")) +
+  labs(x = "Species", y = "Kappa") +
+  coord_flip() +
+  theme(legend.position="none")
+
+df <- do.call("rbind", modstat[[2]])
+df$Response <- factor(df$Response, levels(df$Response)[order(df_mean$Kappa_mean, 
+                                                             decreasing = FALSE)])
+df_melt <- melt(df, id.vars = "Response")
+indv <- nrow(df[df_melt$Response == unique(df_melt$Response)[[1]] & 
+                  df_melt$variable == unique(df_melt$variable)[[1]], 
+                ])
+df_melt$variable_id <- paste0(df_melt$variable, "_", 
+                              seq(indv))
+
+ggplot(data = df_melt[df_melt$variable %in% scores, ], 
+             aes(x = Response, y = value, colour = variable, group = variable_id)) + 
+  geom_line(linetype = "twodash", alpha = 0.25, colour = "#a6cee3") + 
+  geom_point(data = df_mean_melt[df_mean_melt$variable %in% scores_mean, ], 
+             aes(x = Response, y = value, colour = variable, group = variable)) + 
+  geom_line(data = df_mean_melt[df_mean_melt$variable %in% scores_mean, ], 
+            aes(x = Response, y = value, colour = variable, group = variable), 
+            colour = "#1f78b4", size = 1.5) + 
+  geom_hline(yintercept = c(0.20, 0.40), colour="#b2df8a", linetype = "longdash") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 15)) +
+  labs(x = "Species", y = "Kappa") +
+  coord_flip() +
+  theme(legend.position="none")
+
+
+
+
+
 plot_scors$tstat_mspc
 plot_scors$tstat_lspc_lspt_mspc
 plot_scors$tstat_mspc_lspt_asl
@@ -208,6 +269,31 @@ graphics.off()
 
 
 # Variable importance ----------------------------------------------------------
+plotVarImpHeatmap <- function(var_imp, xlab = "Variable", ylab = "Method",
+                              vis_range = "minmax"){
+  temp <- do.call("rbind", var_imp)
+  temp$VARIABLE <- factor(temp$VARIABLE, 
+                          levels = sort(as.character(unique(temp$VARIABLE))))
+  if(vis_range == "minmax"){
+    vis_range <- c(min(temp$mean), max(temp$mean))
+  }
+  clr <- colorRampPalette(brewer.pal(9, "YlOrRd"))
+  lattice::levelplot(mean ~ RESPONSE * VARIABLE, data = temp,
+                     col.regions = clr(101), at = seq(vis_range[1], vis_range[2], length.out = 101),
+                     asp = 1, as.table = TRUE,
+                     ylab = ylab, xlab = xlab,
+                     scales = list(x = list(rot = 45, font = "italic")),
+                     main = "Variable importance",
+                     cex.title = 1,
+                     colorkey = list(space = "top",
+                                     width = 1, height = 0.75),
+                     panel=function(...) {
+                       grid::grid.rect(gp=grid::gpar(col=NA, fill="grey60"))
+                       panel.levelplot(...)
+                     })
+  
+}
+
 var_imp <- lapply(models_sub, function(x){
   compVarImp(x, scale = FALSE)
 })
@@ -220,10 +306,21 @@ var_imp_plot <- lapply(var_imp, function(x){
   plotVarImp(x)
 })
 
-var_imp_heat <- lapply(var_imp_scale, function(x){
-  plotVarImpHeatmap(x, xlab = "Species", ylab = "Band")
+
+var_imp_scale_new <- lapply(var_imp_scale, function(x){
+  lapply(x, function(y){
+    y$RESPONSE <- as.factor(gsub("\\.", " ", y$RESPONSE))
+    y <- merge(y, band_names, by.x = "VARIABLE", by.y = "Original")
+    y$VARIABLE <- y$New
+    y$New <- NULL
+    y$VARIABLE <- factor(y$VARIABLE,levels(y$VARIABLE[order(y$VARIABLE, decreasing = TRUE)]))
+    return(y)
+  })
 })
 
+var_imp_heat <- lapply(var_imp_scale_new, function(x){
+  plotVarImpHeatmap(x, xlab = NULL, ylab = "Band")
+})
 
 
 
@@ -303,6 +400,12 @@ test_mean <- merge(test_mean, asl_mean, by = "Response")
 test_mean <- merge(test_mean, rainfall_mean, by = "Response")
 test_mean <- merge(test_mean, species_mean, by = "Response")
 
+traits[, 5:15] <- log(traits[, 5:15])
+traits_mean <- aggregate(traits[, 5:15], by = list(traits$Name), FUN = mean,
+                         na.rm = TRUE)
+test_mean$Response <- gsub("\\.", " ", test_mean$Response) 
+test_mean <- merge(test_mean, traits_mean, by.x = "Response", by.y = "Group.1")
+
 nv <- function(x){
   (x - min(x)) * (1 - 0) / (max(x) - min(x)) + 0
 }
@@ -313,7 +416,13 @@ test_mean$asl_scaled <- nv(test_mean$asl)
 test_mean$rainfall_scaled <- nv(test_mean$rainfall)
 test_mean$nr.of.species_scaled <- nv(test_mean$nr.of.species)
 
-test_mean_melt <- melt(test_mean[, colnames(test_mean) %in%
+test_mean_unscaled_melt <- melt(test_mean[, colnames(test_mean) %in%
+                                          c("Kappa_mean", "OCCURENCE", 
+                                            "nr.of.species_scaled",
+                                            "Gesamtlaenge")], 
+                              id.vars = "Kappa_mean")
+
+test_mean_scaled_melt <- melt(test_mean[, colnames(test_mean) %in%
                                    c("Kappa_mean", "OCCURENCE_scaled", 
                                      "asl_scaled", 
                                      "NDVI_scaled",
@@ -321,16 +430,74 @@ test_mean_melt <- melt(test_mean[, colnames(test_mean) %in%
                                      "nr.of.species_scaled")], 
                        id.vars = "Kappa_mean")
 
-png(paste0(filepath_figures, "fig_04_scores_dependency.png"), 
-    width = 1024 * 6, 
-    height = 748 * 6, 
-    units = "px", 
-    res = 600)
-ggplot(data = test_mean_melt, aes(x = value, y = Kappa_mean)) + 
+ggplot(data = test_mean_scaled_melt, aes(x = value, y = Kappa_mean)) + 
   geom_point() + 
   geom_smooth() + 
   facet_wrap(~variable,  scales = "free_y")
+
+
+lm_eqn <- function(df){
+  sm <- summary(lm(Kappa_mean ~ value, df));
+  eq <- substitute(italic(r)^2~"="~r2*","~~italic(p)~"="~pv, 
+                   list(r2 = format(sm$r.squared, digits = 3),
+                        pv = format(pf(sm$fstatistic[1L], sm$fstatistic[2L], sm$fstatistic[3L],lower.tail = FALSE), digits = 2)))
+  as.character(as.expression(eq));                 
+}
+
+lm_eqn_occurence <- lm_eqn(test_mean_unscaled_melt[as.character(test_mean_unscaled_melt$variable) == "OCCURENCE",])
+
+plot_occurence <- ggplot(data = test_mean_unscaled_melt[as.character(test_mean_unscaled_melt$variable) == "OCCURENCE",], 
+                         aes(x = value, y = Kappa_mean)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  theme_bw() +
+  # theme(axis.title = element_text(size = 30), axis.text = element_text(size = 22)) + 
+  # facet_wrap(~variable,  scales = "free") + 
+  geom_text(x = 30, y = 0.42, label = lm_eqn_occurence, parse = TRUE) + 
+  xlab("Occurence of the species") + ylab("Kappa (mean)")
+
+
+
+
+
+lm_eqn_body_length <- lm_eqn(test_mean_unscaled_melt[as.character(test_mean_unscaled_melt$variable) == "Gesamtlaenge",])
+
+plot_body_length <- ggplot(data = test_mean_unscaled_melt[as.character(test_mean_unscaled_melt$variable) == "Gesamtlaenge",], 
+                         aes(x = value, y = Kappa_mean)) + 
+  geom_point(size = 4) + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  theme_bw() +
+  theme(axis.title = element_text(size = 30), axis.text = element_text(size = 22)) + 
+  # facet_wrap(~variable,  scales = "free") + 
+  geom_text(x = 1.15, y = 0.30, label = lm_eqn_body_length, parse = TRUE, size = 6) + 
+  xlab("Body length of the species") + ylab("Kappa (mean)")
+
+
+
+png(paste0(filepath_figures, "fig_04a_scores_dependency.png"), 
+    width = 748 * 6, 
+    height = 748 * 6, 
+    units = "px", 
+    res = 600)
+plot_occurence
 graphics.off()
+
+png(paste0(filepath_figures, "fig_04b_scores_dependency.png"), 
+    width = 748 * 6, 
+    height = 748 * 6, 
+    units = "px", 
+    res = 600)
+plot_body_length
+graphics.off()
+
+# ggplot(data = test_mean_unscaled_melt[as.character(test_mean_unscaled_melt$variable) == "Gesamtlaenge",], 
+#        aes(x = value, y = Kappa_mean)) + 
+#   geom_point(size = 10) + 
+#   geom_smooth(method = lm) + 
+#   # facet_wrap(~variable,  scales = "free") + 
+#   geom_text(x = 1.3, y = 0.40, label = lm_eqn_body_length, parse = TRUE, size = 12) + 
+#   xlab("Body length of the species") + ylab("Kappa (mean)") + 
+#   theme(axis.title = element_text(size = 60), axis.text = element_text(size = 44))
 
 # ggplot(data = test_mean, aes(x = OCCURENCE, y = Kappa_mean)) + geom_point() + geom_smooth()
 # ggplot(data = test_mean, aes(x = NDVI, y = Kappa_mean)) + geom_point() + geom_smooth()
@@ -481,13 +648,14 @@ colors <- clrs_hcl(nrow(expl_pca))
 
 rq <- rq(expl_pca[, "Kappa_mean"] ~ expl_pca[, "PC1"], tau = 0.75)
 
-png("figures/fig_08_kappa_pca.png", 
+png(paste0(filepath_figures, "fig_08_variable_importance_01.png"), 
     width = 1024 * 6, 
     height = 748 * 6, 
     units = "px", 
     res = 600)
-xyplot(expl_pca[, "Kappa_mean"] ~ expl_pca[, "PC1"], data = expl_pca,
-       fill.color = colors, xlab = "PC #1", ylab = "Kappa mean",
+xyplot(expl_pca[, "Kappa_mean"] ~ expl_pca[, "Gesamtlaenge"], data = expl_pca,
+       fill.color = colors, xlab = list("Overall length",  cex=2), 
+       ylab = list("Kappa mean",  cex=2), 
        panel = function(x, y,fill.color,...) {
          fill = fill.color
          panel.xyplot(x, y, pch=19, cex = 2, col=fill, grid = TRUE)
@@ -505,6 +673,9 @@ xyplot(expl_pca[, "Kappa_mean"] ~ expl_pca[, "PC1"], data = expl_pca,
                                     length.out = nrow(expl_pca)),
                            width = 1, col = colors)))))
 graphics.off()
+
+summary(lm(expl_pca[, "Kappa_mean"] ~ expl_pca[, "Gesamtlaenge"]))
+
 
 expl_pca_rq <- rq(expl_pca[, "Kappa_mean"] ~ expl_pca[, "PC1"], 
                   tau = seq(0.05, 0.95, 0.05))
