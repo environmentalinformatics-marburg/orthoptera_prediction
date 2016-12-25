@@ -6,15 +6,25 @@ if(Sys.info()["sysname"] == "Windows"){
   source("/media/tnauss/myWork/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 }
 
+
 # Prepare GLS2000 dataset ------------------------------------------------------
-gls <- stack(paste0(filepath_landsat, "gls2000.tif"))
+initOTB("C:/OSGeo4W64/bin/")
+
+
+gls <- stack(paste0(path_landsat, "gls2000.tif"))
 # mapview(gls) + obsv_shp_arc
+
+obsv_shp_wgs <- readRDS(file = paste0(path_results, "obsv_shp_wgs.rds"))
+obsv_shp_wgs <- spTransform(obsv_shp_wgs, crs(gls))
+
+gls_snip <- snipRaster(gls, obsv_shp_wgs, buffer = 60)
+
 
 ndvi <- (gls[[4]] - gls[[3]]) / (gls[[4]] + gls[[3]])
 
-
+otbHaraTex(input=paste0(path_landsat, "gls2000.tif"),texture="simple")
 # Prepare orthoptera observations ----------------------------------------------
-obsv <- read_excel(paste0(filepath_obsv, "Grasshopper-Data.xlsx"))  
+obsv <- read_excel(paste0(path_obsv, "Grasshopper-Data.xlsx"))  
 obsv <- as.data.frame(obsv)
 obsv$date_observation <- format(as.Date(obsv$date, "%d/%m/%Y"), "%Y-%j")
 
@@ -60,7 +70,7 @@ head(ndvi_plots_final@data)
 #   geom_smooth()
 
 saveRDS(ndvi_plots_final, 
-        file = paste0(filepath_results, "ndvi_plots_final.RDS"))
+        file = paste0(path_results, "ndvi_plots_final.RDS"))
 saveRDS(as.data.frame(ndvi_plots_final), 
-        file = paste0(filepath_results, "ndvi_plots_final_df.RDS"))
+        file = paste0(path_results, "ndvi_plots_final_df.RDS"))
 
