@@ -13,12 +13,13 @@ path_temp <- paste0(path_data, "temp/")
 
 
 # Set libraries ----------------------------------------------------------------
-library(rgeos)
+library(glcm)
 library(ggplot2)
 library(mapview)
 library(raster)
 library(readxl)
 library(rgdal)
+library(rgeos)
 library(satellite)
 library(satelliteTools)
 library(sp)
