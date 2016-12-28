@@ -14,6 +14,7 @@ path_temp <- paste0(path_data, "temp/")
 
 # Set libraries ----------------------------------------------------------------
 library(glcm)
+library(gpm)
 library(ggplot2)
 library(mapview)
 library(raster)

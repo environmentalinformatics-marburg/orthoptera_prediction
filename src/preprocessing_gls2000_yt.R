@@ -55,10 +55,6 @@ ndvi_plots_final <- merge(ndvi_obs[[1]], ndvi_obs[[2]]@data)
 head(ndvi_plots_final@data)
 
 
-# ggplot(data = ndvi_plots_final@data, aes(x = NDVI_WGS, y = NDVI_ARC)) + 
-#   geom_point() + 
-#   geom_smooth()
-
 saveRDS(ndvi_plots_final, 
         file = paste0(filepath_results, "ndvi_plots_final.RDS"))
 saveRDS(as.data.frame(ndvi_plots_final), 

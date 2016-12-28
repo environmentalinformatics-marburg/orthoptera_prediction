@@ -48,7 +48,10 @@ if(compute){
     otb_txt <- lapply(seq(length(gls_pca)), function(i){
       if(i %% 10 == 0) print(paste0(i))
       otbTexturesHaralick(x=gls_pca[[i]], path_output = path_temp, 
-                          return_raster = TRUE, texture="all",
+                          return_raster = TRUE, 
+                          parameters.xyrad=list(c(1,1)),
+                          parameters.xyoff=list(c(1,1)),
+                          texture="all",
                           channel = 1)
     })
     saveRDS(otb_txt, file = paste0(path_results, "otb_txt_", prj, ".rds"))
@@ -59,22 +62,23 @@ if(compute){
       glcm(gls_pca[[i]][[1]], n_grey = 32, window = c(3,3),
            shift=list(c(0,1), c(1,1), c(1,0), c(1,-1)))
     })  
+    
     saveRDS(glcm_txt, file = paste0(path_results, "glcm_txt_", prj, ".rds"))
+    # Combine results in one stack per tile
+    gls_2000 <- lapply(seq(length(gls_snip)), function(i){
+      stack(gls_snip[[i]], gls_pca[[i]], mspec_indices[[i]],
+            otb_txt[[i]], glcm_txt[[i]])
+    })
+    names(gls_2000) <- names(gls_snip)
+    saveRDS(gls_2000, file = paste0(path_results, "gls_2000_", prj, ".rds"))
   }
   
-  # Combine results in one stack per tile
-  gls_2000 <- lapply(seq(length(gls_snip)), function(i){
-    stack(gls_snip[[i]], gls_pca[[i]], mspec_indices[[i]],
-          otb_txt[[i]], glcm_txt[[i]])
-  })
-  saveRDS(gls_2000, file = paste0(path_results, "gls_2000_", prj, ".rds"))
-  
 } else {
-  #   gls_snip_wgs <- readRDS(file = paste0(path_results, "gls_snip_", prj, ".rds"))
-  #   gls_pca_wgs <- readRDS(file = paste0(path_results, "gls_pca_", prj, ".rds"))
-  #   mspec_indices_wgs <- readRDS(file = paste0(path_results, "mspec_indices_", prj, ".rds"))
-  #   otb_txt_wgs <- readRDS(file = paste0(path_results, "otb_txt_", prj, ".rds"))
-  #   glcm_txt_wgs <- readRDS(file = paste0(path_results, "glcm_txt_", prj, ".rds"))
+  #     gls_snip_wgs <- readRDS(file = paste0(path_results, "gls_snip_", prj, ".rds"))
+  #     gls_pca_wgs <- readRDS(file = paste0(path_results, "gls_pca_", prj, ".rds"))
+  #     mspec_indices_wgs <- readRDS(file = paste0(path_results, "mspec_indices_", prj, ".rds"))
+  #     otb_txt_wgs <- readRDS(file = paste0(path_results, "otb_txt_", prj, ".rds"))
+  #     glcm_txt_wgs <- readRDS(file = paste0(path_results, "glcm_txt_", prj, ".rds"))
   gls_2000_wgs <- readRDS(file = paste0(path_results, "gls_2000_wgs.rds"))
   
   #   gls_snip_arc <- readRDS(file = paste0(path_results, "gls_snip_", prj, ".rds"))
@@ -86,36 +90,4 @@ if(compute){
 }
 
 
-# Extract GLS2000 data ---------------------------------------------------------
-ndvi_obs <- lapply(c(obsv_shp_wgs, obsv_shp_arc), function(obsv_shp){
-  ndvi_plots <- extract(ndvi, obsv_shp, sp = TRUE)
-  colnames(ndvi_plots@data)[ncol(ndvi_plots@data)] <- "NDVI"
-  
-  ndvi_plots_buffer <- extract(ndvi, obsv_shp, buffer = 60.0)
-  ndvi_plots_buffer_stat <- lapply(seq(length(ndvi_plots_buffer)), function(i){
-    data.frame(ID = obsv_shp@data[i,"ID"],
-               NDVI_mean = mean(ndvi_plots_buffer[[i]]),
-               NDVI_median = median(ndvi_plots_buffer[[i]]),
-               NDVI_sd = sd(ndvi_plots_buffer[[i]]),
-               NDVI_min = min(ndvi_plots_buffer[[i]]),
-               NDVI_max = max(ndvi_plots_buffer[[i]]))
-  })
-  ndvi_plots_buffer_stat <- do.call("rbind", ndvi_plots_buffer_stat)
-  merge(ndvi_plots, ndvi_plots_buffer_stat)
-})
-
-colnames(ndvi_obs[[1]]@data)[28:33] <- paste0(colnames(ndvi_obs[[1]]@data)[28:33], "_WGS")
-colnames(ndvi_obs[[2]]@data)[28:33] <- paste0(colnames(ndvi_obs[[2]]@data)[28:33], "_ARC")
-ndvi_plots_final <- merge(ndvi_obs[[1]], ndvi_obs[[2]]@data)
-head(ndvi_plots_final@data)
-
-
-# ggplot(data = ndvi_plots_final@data, aes(x = NDVI_WGS, y = NDVI_ARC)) + 
-#   geom_point() + 
-#   geom_smooth()
-
-saveRDS(ndvi_plots_final, 
-        file = paste0(path_results, "ndvi_plots_final.RDS"))
-saveRDS(as.data.frame(ndvi_plots_final), 
-        file = paste0(path_results, "ndvi_plots_final_df.RDS"))
 
