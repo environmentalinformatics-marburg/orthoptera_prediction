@@ -12,11 +12,22 @@ path_results <- paste0(path_data, "rdata/")
 path_temp <- paste0(path_data, "temp/")
 
 
+path_modis_local_arc <- paste0(path_data, "modis/modis_arc/")
+path_modis_out_dir <- paste0(path_data, "modis/processed/")
+path_modis_crop <-paste0(path_data, "modis/croped/")
+
+
+
 # Set libraries ----------------------------------------------------------------
+# devtools::install_github("MatMatt/MODIS", ref = "develop")
+# setRepositories() 
+# install.packages(c(' mapdata', 'ptw '),dependencies=TRUE)
+
 library(glcm)
 library(gpm)
 library(ggplot2)
 library(mapview)
+library(MODIS)
 library(raster)
 library(readxl)
 library(rgdal)
@@ -24,3 +35,5 @@ library(rgeos)
 library(satellite)
 library(satelliteTools)
 library(sp)
+
+rasterOptions(tmpdir= paste0(path_temp, "temp/"))

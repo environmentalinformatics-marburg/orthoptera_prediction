@@ -1,4 +1,4 @@
-# Preprocess dataset by combining field and satellite observations
+# Preprocess GLS200 dataset
 # Thomas Nauss
 
 if(Sys.info()["sysname"] == "Windows"){
