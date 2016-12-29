@@ -92,6 +92,8 @@ for(sensor in modis_sensors){
                  spatial=obsv_shp[i,], selector = NULL,
                  buffer=4500, byid = TRUE)
     })
+    modis_snip <- unlist(modis_snip)
+
     saveRDS(modis_snip, file = paste0(path_results, "modis_", sensor, "_snip_", prj, ".rds"))
   }
 }
@@ -138,10 +140,8 @@ for(sensor in modis_sensors){
     })
     names(modis_2000) <- names(modis_snip)
     saveRDS(modis_2000, file = paste0(path_results, "modis_2000_", prj, ".rds"))
-    
-    
-    
-}
+
+
 
 
 #TODO
