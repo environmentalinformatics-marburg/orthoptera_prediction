@@ -44,9 +44,20 @@ if(download){
 #                    "MYD09GA", "MYD09A1", "MYD09Q1")
 modis_sensors <- c("mod", "myd")
 
+tmin <- as.POSIXct(strptime("2002-01-01", "%Y-%m-%d"), tz = "UTC")
+tmax <- as.POSIXct(strptime("2013-01-01", "%Y-%m-%d"), tz = "UTC")
+
 # Create one raster tile for each observation plot
 obsv_shp_wgs <- readRDS(file = paste0(path_results, "obsv_shp_wgs.rds"))
 obsv_shp_arc <- readRDS(file = paste0(path_results, "obsv_shp_arc.rds"))
+
+obsv_shp_wgs_modis <- obsv_shp_wgs[obsv_shp_wgs@data$date >= tmin & 
+                                     obsv_shp_wgs@data$date <= tmax,]
+obsv_shp_arc_modis <- obsv_shp_wgs[obsv_shp_arc@data$date >= tmin & 
+                                     obsv_shp_arc@data$date <= tmax,]
+
+saveRDS(obsv_shp_wgs_modis, file = paste0(path_results, "obsv_shp_wgs_modis.rds"))
+saveRDS(obsv_shp_arc_modis, file = paste0(path_results, "obsv_shp_arc_modis.rds"))
 
 for(sensor in modis_sensors){
   
@@ -63,9 +74,9 @@ for(sensor in modis_sensors){
   
   for(prj in c("wgs", "arc")){
     if(prj == "wgs"){
-      obsv_shp <- obsv_shp_wgs
+      obsv_shp <- obsv_shp_wgs_modis
     } else {
-      obsv_shp <- obsv_shp_arc
+      obsv_shp <- obsv_shp_arc_modis
     }
     obsv_shp <- spTransform(obsv_shp, crs(stack(modis_files[1])))
     
