@@ -4,7 +4,7 @@
 if(Sys.info()["sysname"] == "Windows"){
   source("F:/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 } else {
-  source("/media/tnauss/myWork/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
+  source("/media/tnauss/myWork/analysis/orthoptera/orthoptera_prediction/src/00_gls_set_environment.R")
 }
 
 initOTB("C:/OSGeo4W64/bin/")
@@ -53,7 +53,7 @@ if(compute){
                           parameters.xyrad=list(c(1,1)),
                           parameters.xyoff=list(c(1,1)),
                           parameters.minmax=c(minv, maxv),
-                          parameters.nbbin = 16,
+                          parameters.nbbin = 8,
                           texture="all",
                           channel = 1)
       names(oth) <- paste0("pca_", names(oth))
@@ -72,7 +72,7 @@ if(compute){
                                  parameters.xyrad=list(c(1,1)),
                                  parameters.xyoff=list(c(1,1)),
                                  parameters.minmax=c(minv, maxv),
-                                 parameters.nbbin = 16,
+                                 parameters.nbbin = 8,
                                  texture="all",
                                  channel = 1)
       names(oth) <- paste0("pca_", names(oth))
@@ -132,6 +132,8 @@ if(compute){
   #     gls_ndvi_glcm_txt_arc <- readRDS(file = paste0(path_results, "gls_ndvi_glcm_txt_arc.rds"))
   gls_2000_arc <- readRDS(file = paste0(path_results, "gls_2000_arc.rds"))
 }
+
+
 
 
 
