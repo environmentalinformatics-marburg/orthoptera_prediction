@@ -7,7 +7,7 @@ if(Sys.info()["sysname"] == "Windows"){
   source("/media/tnauss/myWork/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 }
 
-compute <- FALSE
+compute <- TRUE
 
 # Merge GLS2000 data with preprocessed orthoptera observations -----------------
 if(compute){
@@ -59,7 +59,7 @@ if(compute){
                        which(names(obsv) == "Zonocerus.elegans"))
     
     col_precitors <- seq(which(names(obsv) == "gls2000.1"),
-                         which(names(obsv) == "glcm_correlation_sd"))
+                         which(names(obsv) == "ndvi_glcm_correlation_sd"))
     
     if((length(unique(c(col_selector, col_meta, col_diversity, 
                         col_species, col_precitors))) == ncol(obsv))){
@@ -81,12 +81,12 @@ if(compute){
   })
   names(obsv_gpm) <- cprj
   
-  saveRDS(obsv_gpm, file = paste0(path_results, "obsv_gpm.rds"))
-  saveRDS(obsv_gpm[["wgs"]], file = paste0(path_results, "obsv_gpm_wgs.rds"))
-  saveRDS(obsv_gpm[["arc"]], file = paste0(path_results, "obsv_gpm_arc.rds"))
+  saveRDS(obsv_gpm, file = paste0(path_results, "gls_obsv_gpm.rds"))
+  saveRDS(obsv_gpm[["wgs"]], file = paste0(path_results, "gls_obsv_gpm_wgs.rds"))
+  saveRDS(obsv_gpm[["arc"]], file = paste0(path_results, "gls_obsv_gpm_arc.rds"))
 
 } else {
-  obsv_gpm <- readRDS(file = paste0(path_results, "obsv_gpm.rds"))
+  obsv_gpm <- readRDS(file = paste0(path_results, "gls_obsv_gpm.rds"))
 }
 
 
@@ -98,14 +98,14 @@ if(compute){
     obsv <- minimumOccurence(x = obsv,
                              occurence = "yes", 
                              resample = 100, 
-                             thv = 50)
+                             thv = 25)
     obsv@meta$input$RESPONSE <- obsv@meta$input$MIN_OCCURENCE$names
     return(obsv)
   })
   names(obsv_gpm) <- cprj
-  saveRDS(obsv_gpm, file = paste0(path_results, "obsv_gpm_minimumOccurence.rds"))
+  saveRDS(obsv_gpm, file = paste0(path_results, "gls_obsv_gpm_minimumOccurence.rds"))
   } else {
-    obsv_gpm <- readRDS(file = paste0(path_results, "obsv_gpm_minimumOccurence.rds"))
+    obsv_gpm <- readRDS(file = paste0(path_results, "gls_obsv_gpm_minimumOccurence.rds"))
 }
 
 
@@ -129,7 +129,7 @@ if(compute){
     
   })
   names(obsv_gpm) <- cprj
-  saveRDS(obsv_gpm, file = paste0(path_results, "obsv_gpm_traintest.rds"))
+  saveRDS(obsv_gpm, file = paste0(path_results, "gls_obsv_gpm_traintest.rds"))
 } else {
-  obsv_gpm <- readRDS(file = paste0(path_results, "obsv_gpm_traintest.rds"))
+  obsv_gpm <- readRDS(file = paste0(path_results, "gls_obsv_gpm_traintest.rds"))
 }

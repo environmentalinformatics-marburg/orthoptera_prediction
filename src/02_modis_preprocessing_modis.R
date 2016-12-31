@@ -4,12 +4,12 @@
 if(Sys.info()["sysname"] == "Windows"){
   source("F:/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 } else {
-  source("/media/tnauss/myWork/analysis/orthoptera/orthoptera_prediction/src/00_modis_set_environment.R")
+  source("/media/tnauss/myWork/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 }
 
 initOTB("C:/OSGeo4W64/bin/")
 download <- FALSE
-compute <- TRUE
+compute <- FALSE
 
 
 # Download MODIS tiles ---------------------------------------------------------
@@ -44,7 +44,7 @@ if(download){
 #                    "MYD09GA", "MYD09A1", "MYD09Q1")
 if(compute){
   modis_sensors <- c("mod", "myd")
-  
+
   tmin <- as.POSIXct(strptime("2002-01-01", "%Y-%m-%d"), tz = "UTC")
   tmax <- as.POSIXct(strptime("2013-01-01", "%Y-%m-%d"), tz = "UTC")
   
@@ -96,6 +96,11 @@ if(compute){
       })
       modis_snip <- unlist(modis_snip)
       names(modis_snip) <- time_match$a
+      if(sensor == "myd"){
+        modis_snip <- lapply(modis_snip, function(s){
+          s[[-6]]
+        })
+      }
       saveRDS(modis_snip, file = paste0(path_results, "modis_", sensor, "_snip_", prj, ".rds"))
       
       # Compute pca for all plots
@@ -144,7 +149,7 @@ if(compute){
                                    parameters.nbbin = 8,
                                    texture="all",
                                    channel = 1)
-        names(oth) <- paste0("pca_", names(oth))
+        names(oth) <- paste0("ndvi_", names(oth))
         return(oth)
       })
       names(modis_ndvi_otb_txt) <- names(modis_snip)
@@ -166,40 +171,37 @@ if(compute){
         if(i %% 10 == 0) print(paste0(i))
         gt <- glcm(modis_mspec_indices[[i]]$NDVI, n_grey = 32, window = c(3,3),
                    shift=list(c(0,1), c(1,1), c(1,0), c(1,-1)))
-        names(gt) <- paste0("pca_", names(gt))
+        names(gt) <- paste0("ndvi_", names(gt))
         return(gt)
       })
       names(modis_ndvi_glcm_txt) <- names(modis_snip)
       saveRDS(modis_ndvi_glcm_txt, file = paste0(path_results, "modis_", sensor, "_ndvi_glcm_txt_", prj, ".rds"))
       
       # Combine results in one stack per tile
-      modis_2000 <- lapply(seq(length(modis_snip)), function(i){
+      modis <- lapply(seq(length(modis_snip)), function(i){
         stack(modis_snip[[i]], modis_pca[[i]], modis_mspec_indices[[i]],
               modis_pca_otb_txt[[i]], modis_ndvi_otb_txt[[i]],
               modis_pca_glcm_txt[[i]], modis_ndvi_glcm_txt[[i]])
       })
-      names(modis_2000) <- names(modis_snip)
-      saveRDS(modis_2000, file = paste0(path_results, "modis_", sensor, "_2000_", prj, ".rds"))
+      names(modis) <- names(modis_snip)
+      saveRDS(modis, file = paste0(path_results, "modis_", sensor, "_", prj, ".rds"))
     }
   }
 } else {
-  sensor = "mod"
-  prj = "wgs"
-  #     modis_snip_wgs <- readRDS(file = paste0(path_results, "modis_", sensor, "_snip_", prj, ".rds"))
-  #     modis_pca_wgs <- readRDS(file = paste0(path_results, "modis_", sensor, "_pca_", prj, ".rds"))
-  #     modis_mspec_indices_wgs <- readRDS(file = paste0(path_results, "modis_", sensor, "_mspec_indices_", prj, ".rds"))
-  #     modis_pca_otb_txt_wgs <- readRDS(file = paste0(path_results, "modis_", sensor, "_pca_otb_txt_", prj, ".rds"))
-  #     modis_ndvi_otb_txt_wgs <- readRDS(file = paste0(path_results, "modis_", sensor, "_ndvi_otb_txt_", prj, ".rds"))
-  #     modis_pca_glcm_txt_wgs <- readRDS(file = paste0(path_results, "modis_", sensor, "_pca_glcm_txt_", prj, ".rds"))
-  #     modis_ndvi_glcm_txt_wgs <- readRDS(file = paste0(path_results, "modis_", sensor, "_ndvi_glcm_txt_", prj, ".rds"))
-  modis_2000_wgs <- readRDS(file = paste0(path_results, "modis_2000_wgs.rds"))
+  sensor = "myd"
+  prj = "arc"
+  modis_snip <- readRDS(file = paste0(path_results, "modis_", sensor, "_snip_", prj, ".rds"))
+  modis_pca <- readRDS(file = paste0(path_results, "modis_", sensor, "_pca_", prj, ".rds"))
+  modis_mspec_indices <- readRDS(file = paste0(path_results, "modis_", sensor, "_mspec_indices_", prj, ".rds"))
+  modis_pca_otb_txt <- readRDS(file = paste0(path_results, "modis_", sensor, "_pca_otb_txt_", prj, ".rds"))
+  modis_ndvi_otb_txt <- readRDS(file = paste0(path_results, "modis_", sensor, "_ndvi_otb_txt_", prj, ".rds"))
+  modis_pca_glcm_txt <- readRDS(file = paste0(path_results, "modis_", sensor, "_pca_glcm_txt_", prj, ".rds"))
+  modis_ndvi_glcm_txt <- readRDS(file = paste0(path_results, "modis_", sensor, "_ndvi_glcm_txt_", prj, ".rds"))
   
-  #     modis_snip_arc <- readRDS(file = paste0(path_results, "modis_snip_arc.rds"))
-  #     modis_pca_arc <- readRDS(file = paste0(path_results, "modis_pca_arc.rds"))
-  #     modis_mspec_indices_arc <- readRDS(file = paste0(path_results, "modis_mspec_indices_arc.rds"))
-  #     modis_pca_otb_txt_arc <- readRDS(file = paste0(path_results, "modis_pca_otb_txt_arc.rds"))
-  #     modis_ndvi_otb_txt_arc <- readRDS(file = paste0(path_results, "modis_ndvi_otb_txt_arc.rds"))
-  #     modis_pca_glcm_txt_arc <- readRDS(file = paste0(path_results, "modis_pca_glcm_txt_arc.rds"))
-  #     modis_ndvi_glcm_txt_arc <- readRDS(file = paste0(path_results, "modis_ndvi_glcm_txt_arc.rds"))
-  modis_2000_arc <- readRDS(file = paste0(path_results, "modis_2000_arc.rds"))
+  modis_mod_wgs <- readRDS(file = paste0(path_results, "modis_mod_wgs.rds"))
+  modis_mod_arc <- readRDS(file = paste0(path_results, "modis_mod_arc.rds"))
+  
+  modis_myd_wgs <- readRDS(file = paste0(path_results, "modis_myd_wgs.rds"))
+  modis_myd_arc <- readRDS(file = paste0(path_results, "modis_myd_arc.rds"))
+  
 }

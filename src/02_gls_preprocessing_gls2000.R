@@ -8,7 +8,7 @@ if(Sys.info()["sysname"] == "Windows"){
 }
 
 initOTB("C:/OSGeo4W64/bin/")
-compute <- TRUE
+compute <- FALSE
 
 # Prepare GLS2000 dataset ------------------------------------------------------
 if(compute){
@@ -75,7 +75,7 @@ if(compute){
                                  parameters.nbbin = 8,
                                  texture="all",
                                  channel = 1)
-      names(oth) <- paste0("pca_", names(oth))
+      names(oth) <- paste0("ndvi", names(oth))
       return(oth)
     })
     names(gls_ndvi_otb_txt) <- names(gls_snip)
@@ -97,7 +97,7 @@ if(compute){
       if(i %% 10 == 0) print(paste0(i))
       gt <- glcm(gls_mspec_indices[[i]]$NDVI, n_grey = 32, window = c(3,3),
                  shift=list(c(0,1), c(1,1), c(1,0), c(1,-1)))
-      names(gt) <- paste0("pca_", names(gt))
+      names(gt) <- paste0("ndvi_", names(gt))
       return(gt)
     })  
     names(gls_ndvi_glcm_txt) <- names(gls_snip)
@@ -114,26 +114,21 @@ if(compute){
   }
   
 } else {
-  #     gls_snip_wgs <- readRDS(file = paste0(path_results, "gls_snip_wgs.rds"))
-  #     gls_pca_wgs <- readRDS(file = paste0(path_results, "gls_pca_wgs.rds"))
-  #     gls_mspec_indices_wgs <- readRDS(file = paste0(path_results, "gls_mspec_indices_wgs.rds"))
-  #     gls_pca_otb_txt_wgs <- readRDS(file = paste0(path_results, "gls_pca_otb_txt_wgs.rds"))
-  #     gls_ndvi_otb_txt_wgs <- readRDS(file = paste0(path_results, "gls_ndvi_otb_txt_wgs.rds"))
-  #     gls_pca_glcm_txt_wgs <- readRDS(file = paste0(path_results, "gls_pca_glcm_txt_wgs.rds"))
-  #     gls_ndvi_glcm_txt_wgs <- readRDS(file = paste0(path_results, "gls_ndvi_glcm_txt_wgs.rds"))
+      gls_snip_wgs <- readRDS(file = paste0(path_results, "gls_snip_wgs.rds"))
+      gls_pca_wgs <- readRDS(file = paste0(path_results, "gls_pca_wgs.rds"))
+      gls_mspec_indices_wgs <- readRDS(file = paste0(path_results, "gls_mspec_indices_wgs.rds"))
+      gls_pca_otb_txt_wgs <- readRDS(file = paste0(path_results, "gls_pca_otb_txt_wgs.rds"))
+      gls_ndvi_otb_txt_wgs <- readRDS(file = paste0(path_results, "gls_ndvi_otb_txt_wgs.rds"))
+      gls_pca_glcm_txt_wgs <- readRDS(file = paste0(path_results, "gls_pca_glcm_txt_wgs.rds"))
+      gls_ndvi_glcm_txt_wgs <- readRDS(file = paste0(path_results, "gls_ndvi_glcm_txt_wgs.rds"))
   gls_2000_wgs <- readRDS(file = paste0(path_results, "gls_2000_wgs.rds"))
   
-  #     gls_snip_arc <- readRDS(file = paste0(path_results, "gls_snip_arc.rds"))
-  #     gls_pca_arc <- readRDS(file = paste0(path_results, "gls_pca_arc.rds"))
-  #     gls_mspec_indices_arc <- readRDS(file = paste0(path_results, "gls_mspec_indices_arc.rds"))
-  #     gls_pca_otb_txt_arc <- readRDS(file = paste0(path_results, "gls_pca_otb_txt_arc.rds"))
-  #     gls_ndvi_otb_txt_arc <- readRDS(file = paste0(path_results, "gls_ndvi_otb_txt_arc.rds"))
-  #     gls_pca_glcm_txt_arc <- readRDS(file = paste0(path_results, "gls_pca_glcm_txt_arc.rds"))
-  #     gls_ndvi_glcm_txt_arc <- readRDS(file = paste0(path_results, "gls_ndvi_glcm_txt_arc.rds"))
+      gls_snip_arc <- readRDS(file = paste0(path_results, "gls_snip_arc.rds"))
+      gls_pca_arc <- readRDS(file = paste0(path_results, "gls_pca_arc.rds"))
+      gls_mspec_indices_arc <- readRDS(file = paste0(path_results, "gls_mspec_indices_arc.rds"))
+      gls_pca_otb_txt_arc <- readRDS(file = paste0(path_results, "gls_pca_otb_txt_arc.rds"))
+      gls_ndvi_otb_txt_arc <- readRDS(file = paste0(path_results, "gls_ndvi_otb_txt_arc.rds"))
+      gls_pca_glcm_txt_arc <- readRDS(file = paste0(path_results, "gls_pca_glcm_txt_arc.rds"))
+      gls_ndvi_glcm_txt_arc <- readRDS(file = paste0(path_results, "gls_ndvi_glcm_txt_arc.rds"))
   gls_2000_arc <- readRDS(file = paste0(path_results, "gls_2000_arc.rds"))
 }
-
-
-
-
-
