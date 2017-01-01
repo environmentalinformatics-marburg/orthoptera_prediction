@@ -54,7 +54,7 @@ if(compute){
   
   obsv_shp_wgs_modis <- obsv_shp_wgs[obsv_shp_wgs@data$date >= tmin & 
                                        obsv_shp_wgs@data$date <= tmax,]
-  obsv_shp_arc_modis <- obsv_shp_wgs[obsv_shp_arc@data$date >= tmin & 
+  obsv_shp_arc_modis <- obsv_shp_arc[obsv_shp_arc@data$date >= tmin & 
                                        obsv_shp_arc@data$date <= tmax,]
   
   saveRDS(obsv_shp_wgs_modis, file = paste0(path_results, "obsv_shp_wgs_modis.rds"))
@@ -73,7 +73,8 @@ if(compute){
                               pattern = glob2rx("*sur_refl_b0*tif"), 
                               full.names = TRUE)
     
-    for(prj in c("wgs", "arc")){
+    # for(prj in c("wgs", "arc")){
+      for(prj in c("arc")){
       if(prj == "wgs"){
         obsv_shp <- obsv_shp_wgs_modis
       } else {
@@ -89,10 +90,12 @@ if(compute){
       
       modis_snip <- lapply(seq(nrow(time_match)), function(i){
         if(i %% 10 == 0) print(paste0("Processing ", i, " of ", nrow(time_match)))
-        snipRaster(raster=stack(modis_files[grep(strftime(time_match$b[i], "%Y%j"), 
-                                                 modis_files)]), 
-                   spatial=obsv_shp[i,], selector = NULL,
-                   buffer=4500, byid = TRUE)
+        sr <- snipRaster(raster=stack(modis_files[grep(strftime(time_match$b[i], "%Y%j"), 
+                                                       modis_files)]), 
+                         spatial=obsv_shp[i,], selector = NULL,
+                         buffer=4500, byid = TRUE)
+        names(sr[[1]]) <- paste0("modis_", substr(names(sr[[1]]), 18, nchar(names(sr[[1]]))))
+        return(sr)
       })
       modis_snip <- unlist(modis_snip)
       names(modis_snip) <- time_match$a
@@ -188,8 +191,8 @@ if(compute){
     }
   }
 } else {
-  sensor = "myd"
-  prj = "arc"
+  sensor = "mod"
+  prj = "wgs"
   modis_snip <- readRDS(file = paste0(path_results, "modis_", sensor, "_snip_", prj, ".rds"))
   modis_pca <- readRDS(file = paste0(path_results, "modis_", sensor, "_pca_", prj, ".rds"))
   modis_mspec_indices <- readRDS(file = paste0(path_results, "modis_", sensor, "_mspec_indices_", prj, ".rds"))
@@ -203,5 +206,6 @@ if(compute){
   
   modis_myd_wgs <- readRDS(file = paste0(path_results, "modis_myd_wgs.rds"))
   modis_myd_arc <- readRDS(file = paste0(path_results, "modis_myd_arc.rds"))
-  
 }
+
+

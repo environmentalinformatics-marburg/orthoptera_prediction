@@ -35,6 +35,7 @@ if(compute){
   gls_2000_plots <- readRDS(file = paste0(path_results, "gls_2000_plots.rds"))
 }
 
+
 # Prepare gpm data set used for remote sensing prediction study ----------------
 if(compute){
   cprj <- c("wgs", "arc")

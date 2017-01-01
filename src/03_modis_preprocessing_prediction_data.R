@@ -34,8 +34,12 @@ if(compute){
         modis <- modis_arc
         obsv_shp <- spTransform(obsv_shp_arc, crs(modis[[1]]))
       }
+      
+#       obsv_shp@data$date_double <- as.double(obsv_shp@data$date)
+#       names(modis) <- as.double(as.POSIXct(strptime(names(modis), "%Y-%m-%d"), tz = "UTC"))
+
       plots <- extractFromRasterSnips(raster = modis, spatial = obsv_shp, 
-                                      selector = "plot", buffer = 50)
+                                      selector = NULL, buffer = 850)
     })
     names(modis_plots) <- cprj
     saveRDS(modis_plots, file = paste0(path_results, "modis", sensor, "plots.rds"))
