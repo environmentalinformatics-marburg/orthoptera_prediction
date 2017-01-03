@@ -7,7 +7,7 @@ if(Sys.info()["sysname"] == "Windows"){
   source("/media/tnauss/myWork/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 }
 
-compute <- TRUE
+compute <- FALSE
 
 # Merge GLS2000 data with preprocessed orthoptera observations -----------------
 if(compute){
@@ -42,7 +42,7 @@ if(compute){
                                       selector = NULL, buffer = 850)
     })
     names(modis_plots) <- cprj
-    saveRDS(modis_plots, file = paste0(path_results, "modis", sensor, "plots.rds"))
+    saveRDS(modis_plots, file = paste0(path_results, "modis_", sensor, "_plots.rds"))
   } 
 } else {
   modis_mod_plots <- readRDS(file = paste0(path_results, "modis_mod_plots.rds"))
@@ -82,7 +82,7 @@ if(compute){
       col_species <- seq(which(names(obsv) == "Abisares.depressus"),
                          which(names(obsv) == "Zonocerus.elegans"))
       
-      col_precitors <- seq(which(names(obsv) == "gls2000.1"),
+      col_precitors <- seq(which(names(obsv) == "modis_sur_refl_b01"),
                            which(names(obsv) == "ndvi_glcm_correlation_sd"))
       
       if((length(unique(c(col_selector, col_meta, col_diversity, 
@@ -95,7 +95,7 @@ if(compute){
         meta <- createGPMMeta(obsv, type = "input",
                               selector = col_selector, 
                               response = col_species, 
-                              independent = col_precitors, 
+                              predictor = col_precitors, 
                               meta = c(col_meta, col_diversity))
         obsv <- gpm(obsv, meta, scale = TRUE)
       } else {
@@ -146,8 +146,7 @@ if(compute){
 }
 
 
-
-# Compile model training and evaluation dataset --------------------------------
+# Clean predictor variables ----------------------------------------------------
 if(compute){
   
   modis_sensors <- c("mod", "myd")
@@ -157,6 +156,33 @@ if(compute){
       obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_mod_minimumOccurence.rds"))
     } else {
       obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_myd_minimumOccurence.rds"))
+    }
+    
+    cprj <- c("wgs", "arc")
+    obsv_modis <- lapply(cprj, function(prj){
+      obsv <- obsv_modis[[prj]]
+      obsv <- cleanPredictors(x = obsv, nzv = TRUE, 
+                              highcor = TRUE, cutoff = 0.90)
+      return(obsv)
+    })
+    names(obsv_modis) <- cprj
+    saveRDS(obsv_modis, file = paste0(path_results, "obsv_modis_", sensor, "_cleanPredictors.rds"))
+  }
+} else {
+  obsv_modis_mod <- readRDS(file = paste0(path_results, "obsv_modis_mod_cleanPredictors.rds"))
+  obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_myd_cleanPredictors.rds"))
+}
+
+# Compile model training and evaluation dataset --------------------------------
+if(compute){
+  
+  modis_sensors <- c("mod", "myd")
+  for(sensor in modis_sensors){
+    
+    if(sensor == "mod"){
+      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_mod_cleanPredictors.rds"))
+    } else {
+      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_myd_cleanPredictors.rds"))
     }
     cprj <- c("wgs", "arc")
     obsv_modis <- lapply(cprj, function(prj){
@@ -170,8 +196,8 @@ if(compute){
       
       # Split resamples into training and testing samples
       obsv <- splitMultResp(x = obsv, 
-                            p = 0.75, 
-                            use_selector = TRUE)
+                            p = 0.85, 
+                            use_selector = FALSE)
       
     })
     names(obsv_modis) <- cprj

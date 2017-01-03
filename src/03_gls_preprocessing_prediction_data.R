@@ -7,7 +7,7 @@ if(Sys.info()["sysname"] == "Windows"){
   source("/media/tnauss/myWork/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 }
 
-compute <- TRUE
+compute <- FALSE
 
 # Merge GLS2000 data with preprocessed orthoptera observations -----------------
 if(compute){
@@ -72,7 +72,7 @@ if(compute){
       meta <- createGPMMeta(obsv, type = "input",
                             selector = col_selector, 
                             response = col_species, 
-                            independent = col_precitors, 
+                            predictor = col_precitors, 
                             meta = c(col_meta, col_diversity))
       obsv <- gpm(obsv, meta, scale = TRUE)
     } else {
@@ -83,15 +83,12 @@ if(compute){
   names(obsv_gpm) <- cprj
   
   saveRDS(obsv_gpm, file = paste0(path_results, "gls_obsv_gpm.rds"))
-  saveRDS(obsv_gpm[["wgs"]], file = paste0(path_results, "gls_obsv_gpm_wgs.rds"))
-  saveRDS(obsv_gpm[["arc"]], file = paste0(path_results, "gls_obsv_gpm_arc.rds"))
-
 } else {
   obsv_gpm <- readRDS(file = paste0(path_results, "gls_obsv_gpm.rds"))
 }
 
 
-# Select responses occuring at least 20 plots on average -----------------------
+# Select responses occuring at least 25 plots on average -----------------------
 if(compute){
   cprj <- c("wgs", "arc")
   obsv_gpm <- lapply(cprj, function(prj){
@@ -100,7 +97,6 @@ if(compute){
                              occurence = "yes", 
                              resample = 100, 
                              thv = 25)
-    obsv@meta$input$RESPONSE <- obsv@meta$input$MIN_OCCURENCE$names
     return(obsv)
   })
   names(obsv_gpm) <- cprj
@@ -109,6 +105,21 @@ if(compute){
     obsv_gpm <- readRDS(file = paste0(path_results, "gls_obsv_gpm_minimumOccurence.rds"))
 }
 
+
+# Clean predictor variables ----------------------------------------------------
+if(compute){
+  cprj <- c("wgs", "arc")
+  obsv_gpm <- lapply(cprj, function(prj){
+    obsv <- obsv_gpm[[prj]]
+    obsv <- cleanPredictors(x = obsv, nzv = TRUE, 
+                            highcor = TRUE, cutoff = 0.90)
+    return(obsv)
+  })
+  names(obsv_gpm) <- cprj
+  saveRDS(obsv_gpm, file = paste0(path_results, "gls_obsv_gpm_cleanPredictors.rds"))
+} else {
+  obsv_gpm <- readRDS(file = paste0(path_results, "gls_obsv_gpm_cleanPredictors.rds"))
+}
 
 
 # Compile model training and evaluation dataset --------------------------------
@@ -125,8 +136,8 @@ if(compute){
     
     # Split resamples into training and testing samples
     obsv <- splitMultResp(x = obsv, 
-                          p = 0.75, 
-                          use_selector = TRUE)
+                          p = 0.85, 
+                          use_selector = FALSE)
     
   })
   names(obsv_gpm) <- cprj
