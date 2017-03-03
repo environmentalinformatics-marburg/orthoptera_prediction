@@ -1,6 +1,6 @@
 # Set path ---------------------------------------------------------------------
 if(Sys.info()["sysname"] == "Windows"){
-  path_base <- "F:/analysis/orthoptera/"
+  path_base <- "F:/tnauss/orthoptera/"
 } else {
   path_base <- "/media/tnauss/myWork/analysis/orthoptera/"
 }
@@ -23,6 +23,7 @@ path_modis_crop <-paste0(path_data, "modis/croped/")
 # setRepositories() 
 # install.packages(c(' mapdata', 'ptw '),dependencies=TRUE)
 
+library(doParallel)
 library(glcm)
 library(gpm)
 library(ggplot2)
@@ -36,4 +37,10 @@ library(satellite)
 library(satelliteTools)
 library(sp)
 
-rasterOptions(tmpdir= paste0(path_temp, "temp/"))
+
+# Other settings ---------------------------------------------------------------
+rasterOptions(tmpdir = path_temp)
+
+saga_cmd <- "C:/OSGeo4W64/apps/saga/saga_cmd.exe "
+# initOTB("C:/OSGeo4W64/bin/")
+initOTB("C:/PROGRA~1/OTB-5.8.0-win64/bin/")

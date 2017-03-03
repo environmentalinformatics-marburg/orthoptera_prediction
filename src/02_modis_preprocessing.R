@@ -44,20 +44,20 @@ if(download){
 #                    "MYD09GA", "MYD09A1", "MYD09Q1")
 if(compute){
   modis_sensors <- c("mod", "myd")
-
+  
   tmin <- as.POSIXct(strptime("2002-01-01", "%Y-%m-%d"), tz = "UTC")
   tmax <- as.POSIXct(strptime("2013-01-01", "%Y-%m-%d"), tz = "UTC")
   
   # Create one raster tile for each observation plot
-  obsv_shp_wgs <- readRDS(file = paste0(path_results, "obsv_shp_wgs.rds"))
+  # obsv_shp_wgs <- readRDS(file = paste0(path_results, "obsv_shp_wgs.rds"))
   obsv_shp_arc <- readRDS(file = paste0(path_results, "obsv_shp_arc.rds"))
   
-  obsv_shp_wgs_modis <- obsv_shp_wgs[obsv_shp_wgs@data$date >= tmin & 
-                                       obsv_shp_wgs@data$date <= tmax,]
+  # obsv_shp_wgs_modis <- obsv_shp_wgs[obsv_shp_wgs@data$date >= tmin & 
+  #                                      obsv_shp_wgs@data$date <= tmax,]
   obsv_shp_arc_modis <- obsv_shp_arc[obsv_shp_arc@data$date >= tmin & 
                                        obsv_shp_arc@data$date <= tmax,]
   
-  saveRDS(obsv_shp_wgs_modis, file = paste0(path_results, "obsv_shp_wgs_modis.rds"))
+  # saveRDS(obsv_shp_wgs_modis, file = paste0(path_results, "obsv_shp_wgs_modis.rds"))
   saveRDS(obsv_shp_arc_modis, file = paste0(path_results, "obsv_shp_arc_modis.rds"))
   
   for(sensor in modis_sensors){
@@ -74,7 +74,7 @@ if(compute){
                               full.names = TRUE)
     
     # for(prj in c("wgs", "arc")){
-      for(prj in c("arc")){
+    for(prj in c("arc")){
       if(prj == "wgs"){
         obsv_shp <- obsv_shp_wgs_modis
       } else {
@@ -121,20 +121,24 @@ if(compute){
       saveRDS(modis_mspec_indices, file = paste0(path_results, "modis_", sensor, "_mspec_indices_", prj, ".rds"))
       
       # Compute Haralick textures for all plots based on PCA
+      windows <- seq(1, 5, 2)
       minv <- min(unlist(lapply(modis_pca, function(s){minValue(s$PC1)})))
       maxv <- max(unlist(lapply(modis_pca, function(s){maxValue(s$PC1)})))
       modis_pca_otb_txt <- lapply(seq(length(modis_pca)), function(i){
         if(i %% 10 == 0) print(paste0(i))
-        oth <- otbTexturesHaralick(x=modis_pca[[i]]$PC1, path_output = path_temp, 
-                                   return_raster = TRUE, 
-                                   parameters.xyrad=list(c(1,1)),
-                                   parameters.xyoff=list(c(1,1)),
-                                   parameters.minmax=c(minv, maxv),
-                                   parameters.nbbin = 8,
-                                   texture="all",
-                                   channel = 1)
-        names(oth) <- paste0("pca_", names(oth))
-        return(oth)
+        otb_txt_w <- lapply(windows, function(w){
+          oth <- otbTexturesHaralick(x=modis_pca[[i]]$PC1, path_output = path_temp, 
+                                     return_raster = TRUE, 
+                                     parameters.xyrad=list(c(w,w)),
+                                     parameters.xyoff=list(c(1,1)),
+                                     parameters.minmax=c(minv, maxv),
+                                     parameters.nbbin = 8,
+                                     texture="all",
+                                     channel = 1)
+          names(oth) <- paste0("pca_", names(oth))
+          return(oth)
+        })
+        return(otb_txt_w)
       })
       names(modis_pca_otb_txt) <- names(modis_snip)
       saveRDS(modis_pca_otb_txt, file = paste0(path_results, "modis_", sensor, "_pca_otb_txt_", prj, ".rds"))
@@ -144,16 +148,19 @@ if(compute){
       maxv <- 1
       modis_ndvi_otb_txt <- lapply(seq(length(modis_mspec_indices)), function(i){
         if(i %% 10 == 0) print(paste0(i))
-        oth <- otbTexturesHaralick(x=modis_mspec_indices[[i]]$NDVI, path_output = path_temp, 
-                                   return_raster = TRUE, 
-                                   parameters.xyrad=list(c(1,1)),
-                                   parameters.xyoff=list(c(1,1)),
-                                   parameters.minmax=c(minv, maxv),
-                                   parameters.nbbin = 8,
-                                   texture="all",
-                                   channel = 1)
-        names(oth) <- paste0("ndvi_", names(oth))
-        return(oth)
+        otb_txt_w <- lapply(windows, function(w){
+          oth <- otbTexturesHaralick(x=modis_mspec_indices[[i]]$NDVI, path_output = path_temp, 
+                                     return_raster = TRUE, 
+                                     parameters.xyrad=list(c(w,w)),
+                                     parameters.xyoff=list(c(1,1)),
+                                     parameters.minmax=c(minv, maxv),
+                                     parameters.nbbin = 8,
+                                     texture="all",
+                                     channel = 1)
+          names(oth) <- paste0("ndvi_", names(oth))
+          return(oth)
+        })
+        return(otb_txt_w)
       })
       names(modis_ndvi_otb_txt) <- names(modis_snip)
       saveRDS(modis_ndvi_otb_txt, file = paste0(path_results, "modis_", sensor, "_ndvi_otb_txt_", prj, ".rds"))
@@ -161,10 +168,13 @@ if(compute){
       # Compute glcm textures for all plots based on PCA
       modis_pca_glcm_txt <- lapply(seq(length(modis_pca)), function(i){
         if(i %% 10 == 0) print(paste0(i))
-        gt <- glcm(modis_pca[[i]]$PC1, n_grey = 32, window = c(3,3),
-                   shift=list(c(0,1), c(1,1), c(1,0), c(1,-1)))
-        names(gt) <- paste0("pca_", names(gt))
-        return(gt)
+        gt_w <- lapply(windows, function(w){
+          gt <- glcm(modis_pca[[i]]$PC1, n_grey = 32, window = c(w,w),
+                     shift=list(c(0,1), c(1,1), c(1,0), c(1,-1)))
+          names(gt) <- paste0("pca_", names(gt))
+          return(gt)
+        })
+        return(gt_w)
       })  
       names(modis_pca_glcm_txt) <- names(modis_snip)
       saveRDS(modis_pca_glcm_txt, file = paste0(path_results, "modis_", sensor, "_pca_glcm_txt_", prj, ".rds"))
@@ -172,10 +182,13 @@ if(compute){
       # Compute glcm textures for all plots based on NDVI
       modis_ndvi_glcm_txt <- lapply(seq(length(modis_mspec_indices)), function(i){
         if(i %% 10 == 0) print(paste0(i))
-        gt <- glcm(modis_mspec_indices[[i]]$NDVI, n_grey = 32, window = c(3,3),
-                   shift=list(c(0,1), c(1,1), c(1,0), c(1,-1)))
-        names(gt) <- paste0("ndvi_", names(gt))
-        return(gt)
+        gt_w <- lapply(windows, function(w){
+          gt <- glcm(modis_mspec_indices[[i]]$NDVI, n_grey = 32, window = c(3,3),
+                     shift=list(c(0,1), c(1,1), c(1,0), c(1,-1)))
+          names(gt) <- paste0("ndvi_", names(gt))
+          return(gt)
+        })
+        return(gt_w)
       })
       names(modis_ndvi_glcm_txt) <- names(modis_snip)
       saveRDS(modis_ndvi_glcm_txt, file = paste0(path_results, "modis_", sensor, "_ndvi_glcm_txt_", prj, ".rds"))
@@ -192,7 +205,7 @@ if(compute){
   }
 } else {
   sensor = "mod"
-  prj = "wgs"
+  prj = "arc"
   modis_snip <- readRDS(file = paste0(path_results, "modis_", sensor, "_snip_", prj, ".rds"))
   modis_pca <- readRDS(file = paste0(path_results, "modis_", sensor, "_pca_", prj, ".rds"))
   modis_mspec_indices <- readRDS(file = paste0(path_results, "modis_", sensor, "_mspec_indices_", prj, ".rds"))
@@ -201,10 +214,10 @@ if(compute){
   modis_pca_glcm_txt <- readRDS(file = paste0(path_results, "modis_", sensor, "_pca_glcm_txt_", prj, ".rds"))
   modis_ndvi_glcm_txt <- readRDS(file = paste0(path_results, "modis_", sensor, "_ndvi_glcm_txt_", prj, ".rds"))
   
-  modis_mod_wgs <- readRDS(file = paste0(path_results, "modis_mod_wgs.rds"))
+  # modis_mod_wgs <- readRDS(file = paste0(path_results, "modis_mod_wgs.rds"))
   modis_mod_arc <- readRDS(file = paste0(path_results, "modis_mod_arc.rds"))
   
-  modis_myd_wgs <- readRDS(file = paste0(path_results, "modis_myd_wgs.rds"))
+  # modis_myd_wgs <- readRDS(file = paste0(path_results, "modis_myd_wgs.rds"))
   modis_myd_arc <- readRDS(file = paste0(path_results, "modis_myd_arc.rds"))
 }
 
