@@ -14,7 +14,6 @@ obsv_gpm <- readRDS(file = paste0(path_results, "obsv_gls_gpm_trainmodel.rds"))
 
 tstat <- compContTests(obsv_gpm@model$rf_rfe, mean = TRUE)
 
-, color = variable, group = variable)) 
 
 tstat_mean <- tstat[[1]]
 tstat_mean$Response <- factor(tstat_mean$Response, levels(tstat_mean$Response)[order(tstat_mean$Kappa_mean)])
