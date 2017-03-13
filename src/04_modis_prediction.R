@@ -12,59 +12,39 @@ compute <- TRUE
 # Predict dataset --------------------------------------------------------------
 if(compute){
 
-  obsv_modis_mod <- readRDS(file = paste0(path_results, "obsv_modis_mod_traintest.rds"))
+  obsv_modis_mod <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod_traintest.rds"))
   
-  obsv_modis_mod_wgs <- trainModel(x = obsv_modis_mod[["wgs"]],
+  n_var <- c(seq(1, 29), seq(40, length(obsv_modis_mod@meta$input$PREDICTOR_FINAL), 40))
+  
+  cl <- makeCluster(detectCores())
+  registerDoParallel(cl)
+  
+  obsv_modis_mod <- trainModel(x = obsv_modis_mod,
                          n_var = NULL, 
                          mthd = "rf",
                          mode = "rfe",
                          seed_nbr = 11, 
                          cv_nbr = 5,
-                         var_selection = "sd", 
-                         response_nbr = seq(3), 
-                         resample_nbr = seq(2),
+                         var_selection = "indv", 
                          filepath_tmp = NULL)
-  saveRDS(obsv_modis_mod_wgs, file = paste0(path_results, "obsv_modis_mod_wgs_trainModel.rds"))
+  saveRDS(obsv_modis_mod, file = paste0(path_results, "obsv_mod_gpm_trainmodel.rds"))
   
-  obsv_modis_mod_arc <- trainModel(x = obsv_modis_mod[["arc"]],
+
+  obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_traintest.rds"))
+  
+  n_var <- c(seq(1, 29), seq(40, length(obsv_modis_myd@meta$input$PREDICTOR_FINAL), 40))
+  
+  obsv_modis_myd <- trainModel(x = obsv_modis_myd,
                                    n_var = NULL, 
                                    mthd = "rf",
                                    mode = "rfe",
                                    seed_nbr = 11, 
                                    cv_nbr = 5,
-                                   var_selection = "sd", 
-                                   response_nbr = seq(3), 
-                                   resample_nbr = seq(2),
+                                   var_selection = "indv", 
                                    filepath_tmp = NULL)
-  saveRDS(obsv_modis_mod_arc, file = paste0(path_results, "obsv_modis_mod_arc_trainModel.rds"))
+  saveRDS(obsv_modis_myd, file = paste0(path_results, "obsv_myd_gpm_trainmodel.rds"))
   
-  
-  obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_myd_traintest.rds"))
-  
-  obsv_modis_myd_wgs <- trainModel(x = obsv_modis_myd[["wgs"]],
-                                   n_var = NULL, 
-                                   mthd = "rf",
-                                   mode = "rfe",
-                                   seed_nbr = 11, 
-                                   cv_nbr = 5,
-                                   var_selection = "sd", 
-                                   response_nbr = seq(3), 
-                                   resample_nbr = seq(2),
-                                   filepath_tmp = NULL)
-  saveRDS(obsv_modis_myd_wgs, file = paste0(path_results, "obsv_modis_myd_wgs_trainModel.rds"))
-  
-  obsv_modis_myd_arc <- trainModel(x = obsv_modis_myd[["arc"]],
-                                   n_var = NULL, 
-                                   mthd = "rf",
-                                   mode = "rfe",
-                                   seed_nbr = 11, 
-                                   cv_nbr = 5,
-                                   var_selection = "sd", 
-                                   response_nbr = seq(3), 
-                                   resample_nbr = seq(2),
-                                   filepath_tmp = NULL)
-  saveRDS(obsv_modis_myd_arc, file = paste0(path_results, "obsv_modis_myd_arc_trainModel.rds"))
-  
+
 } else {
   obsv_modis_mod_wgs <- readRDS(file = paste0(path_results, "obsv_modis_mod_wgs_trainModel.rds"))
   obsv_modis_mod_arc <- readRDS(file = paste0(path_results, "obsv_modis_mod_arc_trainModel.rds"))
@@ -73,19 +53,20 @@ if(compute){
 }
 
 
-# var_imp <- compVarImp(models@model, scale = FALSE)
-# 
-# var_imp_scale <- compVarImp(models@model, scale = TRUE)
-# 
-# var_imp_plot <- plotVarImp(var_imp)
-# 
-# var_imp_heat <- plotVarImpHeatmap(var_imp_scale, xlab = "Species", ylab = "Band")
-# 
-# tstat <- compContTests(models@model, mean = TRUE)
-# 
-# tstat_mean <- merge(tstat[[1]], obsv_modis[[prj]]@meta$input$MIN_OCCURENCE, 
-#                     by.x = "Response", by.y="names")
-# 
-# tstat_mean[order(tstat_mean$Kappa_mean, decreasing = TRUE),]
-# 
-# ggplot(data = tstat_mean, aes(x = mo_mean, y = Kappa_mean)) + geom_point() + geom_smooth()
+var_imp <- compVarImp(obsv_gpm@model$rf_rfe, scale = FALSE)
+
+var_imp_scale <- compVarImp(obsv_gpm@model$rf_rfe, scale = TRUE)
+
+var_imp_plot <- plotVarImp(var_imp)
+
+var_imp_heat <- plotVarImpHeatmap(var_imp_scale, xlab = "Species", ylab = "Band")
+
+tstat_mod <- compContTests(obsv_modis_mod@model$rf_rfe, mean = TRUE)
+tstat_myd <- compContTests(obsv_modis_myd@model$rf_rfe, mean = TRUE)
+
+tstat_mean <- merge(tstat[[1]], obsv_gpm@meta$input$MIN_OCCURENCE,
+                    by.x = "Response", by.y="names")
+
+tstat_mean[order(tstat_mean$Kappa_mean, decreasing = TRUE),]
+
+ggplot(data = tstat_mean, aes(x = mo_mean, y = Kappa_mean)) + geom_point() + geom_smooth()
