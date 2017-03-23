@@ -34,6 +34,10 @@ dem <- raster(paste0(filepath_obsv, "DEM_UTM37S_WGS84_30m_Hemp.tif"))
 traits <- read.table(paste0(filepath_traits, "Orthoptera_10_11_2015.csv"),
                      header = TRUE, sep = ";", dec = ".")
 
+
+
+
+
 load(paste0(filepath_results, "orthoptera_prediction_models_rf_2016-06-06_rfe_sd_mspc.RData"))
 mspc <- models
 
