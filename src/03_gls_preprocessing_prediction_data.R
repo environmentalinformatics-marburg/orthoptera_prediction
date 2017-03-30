@@ -88,7 +88,7 @@ if(compute){
 if(compute){
   # Remove highly correlated or near zero variance predictors
   obsv_gls <- cleanPredictors(x = obsv_gls, nzv = TRUE, 
-                              highcor = TRUE, cutoff = 0.80,
+                              highcor = TRUE, cutoff = 0.75,
                               rmvna = TRUE)
   
   # Get some predictors back even if removed:
@@ -122,7 +122,7 @@ if(compute){
   obsv_gls <- resamplingsByVariable(x = obsv_gls,
                                     use_selector = TRUE,
                                     grabs = 1,
-                                    resample = 100)
+                                    resample = 25)
   
   # Split resamples into training and testing samples
   obsv_gls <- splitMultResp(x = obsv_gls, 

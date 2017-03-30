@@ -130,7 +130,7 @@ if(compute){
     }
     
     obsv_modis <- cleanPredictors(x = obsv_modis, nzv = TRUE, 
-                                  highcor = TRUE, cutoff = 0.90)
+                                  highcor = TRUE, cutoff = 0.75)
 
     
     # Get some predictors back even if removed:
@@ -175,7 +175,7 @@ if(compute){
     obsv_modis <- resamplingsByVariable(x = obsv_modis,
                                         use_selector = TRUE,
                                         grabs = 1,
-                                        resample = 100)
+                                        resample = 25)
     
     # Split resamples into training and testing samples
     obsv_modis <- splitMultResp(x = obsv_modis, 
