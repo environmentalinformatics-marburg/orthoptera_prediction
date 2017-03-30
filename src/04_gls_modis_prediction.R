@@ -12,7 +12,7 @@ compute <- TRUE
 # Predict dataset --------------------------------------------------------------
 if(compute){
   obsv_gpm <- readRDS(file = paste0(path_results, "obsv_gls_gpm_traintest.rds"))
-  n_var <- c(seq(1, 29), seq(40, length(obsv_gpm@meta$input$PREDICTOR_FINAL), 40))
+  n_var <- c(seq(1, 20), length(obsv_gpm@meta$input$PREDICTOR_FINAL))
   
   cl <- makeCluster(detectCores())
   registerDoParallel(cl)
@@ -25,8 +25,7 @@ if(compute){
                          cv_nbr = 5,
                          var_selection = "indv", 
                          metric = "Kappa",
-                         response_nbr = c(1, 5, 10),
-                         resample_nbr = c(1:10),
+                         tune_length = 5,
                          filepath_tmp = path_temp)
   saveRDS(obsv_gpm, file = paste0(path_results, "obsv_gls_gpm_trainmodel.rds"))
   
@@ -34,34 +33,37 @@ if(compute){
   
   obsv_modis_mod <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod_traintest.rds"))
   
-  n_var <- c(seq(1, 29), seq(40, length(obsv_modis_mod@meta$input$PREDICTOR_FINAL), 40))
+  n_var <- c(seq(1, 20), length(obsv_modis_mod@meta$input$PREDICTOR_FINAL))
   
   cl <- makeCluster(detectCores())
   registerDoParallel(cl)
   
   obsv_modis_mod <- trainModel(x = obsv_modis_mod,
-                               n_var = NULL, 
+                               n_var = n_var, 
                                mthd = "rf",
                                mode = "rfe",
                                seed_nbr = 11, 
-                               cv_nbr = 5,
+                               cv_nbr = 2,
                                var_selection = "indv", 
-                               filepath_tmp = NULL)
+                               metric = "Kappa",
+                               tune_length = 5,
+                               filepath_tmp = path_temp)
   saveRDS(obsv_modis_mod, file = paste0(path_results, "obsv_mod_gpm_trainmodel.rds"))
   
   
   
   obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_traintest.rds"))
   
-  n_var <- c(seq(1, 29), seq(40, length(obsv_modis_myd@meta$input$PREDICTOR_FINAL), 40))
-  
+  n_var <- c(seq(1, 20), length(obsv_modis_myd@meta$input$PREDICTOR_FINAL))
   obsv_modis_myd <- trainModel(x = obsv_modis_myd,
-                               n_var = NULL, 
+                               n_var = n_var, 
                                mthd = "rf",
                                mode = "rfe",
                                seed_nbr = 11, 
-                               cv_nbr = 5,
+                               cv_nbr = 2,
                                var_selection = "indv", 
-                               filepath_tmp = NULL)
+                               metric = "Kappa",
+                               tune_length = 5,
+                               filepath_tmp = path_temp)
   saveRDS(obsv_modis_myd, file = paste0(path_results, "obsv_myd_gpm_trainmodel.rds"))
 }
