@@ -51,6 +51,8 @@ if(compute){
   saveRDS(obsv_modis_mod, file = paste0(path_results, "obsv_mod_gpm_trainmodel.rds"))
   
   
+  cl <- makeCluster(detectCores())
+  registerDoParallel(cl)
   
   obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_traintest.rds"))
   
