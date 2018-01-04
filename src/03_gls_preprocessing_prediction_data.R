@@ -66,9 +66,9 @@ if(compute){
   }
 
 
-  saveRDS(obsv_gls, file = paste0(path_results, "obsv_gls_gpm.rds"))
+  saveRDS(obsv_gls, file = paste0(path_results, "gls_2000_gpm.rds"))
 } else {
-  obsv_gls <- readRDS(file = paste0(path_results, "obsv_gls_gpm.rds"))
+  obsv_gls <- readRDS(file = paste0(path_results, "gls_2000_gpm.rds"))
 }
 
 
@@ -78,9 +78,9 @@ if(compute){
                                occurence = "yes", 
                                resample = 100, 
                                thv = 25)
-  saveRDS(obsv_gls, file = paste0(path_results, "obsv_gls_gpm_minimumOccurence.rds"))
+  saveRDS(obsv_gls, file = paste0(path_results, "gls_2000_gpm_minimumOccurence.rds"))
 } else {
-  obsv_gls <- readRDS(file = paste0(path_results, "obsv_gls_gpm_minimumOccurence.rds"))
+  obsv_gls <- readRDS(file = paste0(path_results, "gls_2000_gpm_minimumOccurence.rds"))
 }
 
 
@@ -110,9 +110,9 @@ if(compute){
   narm <- which(obsv_gls@meta$input$PREDICTOR_FINAL %in%  names(na_check[na_check>0]))
   obsv_gls@meta$input$PREDICTOR_FINAL <- obsv_gls@meta$input$PREDICTOR_FINAL[-narm]
 
-  saveRDS(obsv_gls, file = paste0(path_results, "obsv_gls_gpm_cleanPredictors.rds"))
+  saveRDS(obsv_gls, file = paste0(path_results, "gls_2000_gpm_cleanPredictors.rds"))
 } else {
-  obsv_gls <- readRDS(file = paste0(path_results, "obsv_gls_gpm_cleanPredictors.rds"))
+  obsv_gls <- readRDS(file = paste0(path_results, "gls_2000_gpm_cleanPredictors.rds"))
 }
 
 
@@ -128,7 +128,7 @@ if(compute){
   obsv_gls <- splitMultResp(x = obsv_gls, 
                             p = 0.85, 
                             use_selector = FALSE)
-  saveRDS(obsv_gls, file = paste0(path_results, "obsv_gls_gpm_traintest.rds"))
+  saveRDS(obsv_gls, file = paste0(path_results, "gls_2000_gpm_traintest.rds"))
 } else {
-  obsv_gls <- readRDS(file = paste0(path_results, "obsv_gls_gpm_traintest.rds"))
+  obsv_gls <- readRDS(file = paste0(path_results, "gls_2000_gpm_traintest.rds"))
 }

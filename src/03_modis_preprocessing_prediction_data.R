@@ -18,9 +18,9 @@ if(compute){
   for(sensor in modis_sensors){
     
     if(sensor == "mod"){
-      modis <- readRDS(file = paste0(path_results, "modis_mod_arc.rds"))
+      modis <- readRDS(file = paste0(path_results, "mod_arc.rds"))
     } else {
-      modis <- readRDS(file = paste0(path_results, "modis_myd_arc.rds"))
+      modis <- readRDS(file = paste0(path_results, "myd_arc.rds"))
     }
     obsv_shp <- spTransform(obsv_shp_arc, crs(modis[[1]]))
 
@@ -29,8 +29,8 @@ if(compute){
     saveRDS(modis_plots, file = paste0(path_results, "modis_", sensor, "_plots.rds"))
   } 
 } else {
-  modis_mod_plots <- readRDS(file = paste0(path_results, "modis_mod_plots.rds"))
-  modis_myd_plots <- readRDS(file = paste0(path_results, "modis_myd_plots.rds"))
+  mod_plots <- readRDS(file = paste0(path_results, "mod_plots.rds"))
+  myd_plots <- readRDS(file = paste0(path_results, "myd_plots.rds"))
 }
   
 
@@ -41,9 +41,9 @@ if(compute){
   for(sensor in modis_sensors){
     
     if(sensor == "mod"){
-      modis_plots <- readRDS(file = paste0(path_results, "modis_mod_plots.rds"))
+      modis_plots <- readRDS(file = paste0(path_results, "mod_plots.rds"))
     } else {
-      modis_plots <- readRDS(file = paste0(path_results, "modis_myd_plots.rds"))
+      modis_plots <- readRDS(file = paste0(path_results, "myd_plots.rds"))
     }
     obsv_modis <- as.data.frame(modis_plots)
       col_selector <- which(names(obsv_modis) == "plot")
@@ -87,8 +87,8 @@ if(compute){
     saveRDS(obsv_modis, file = paste0(path_results, "obsv_modis_gpm_", sensor, ".rds"))
   }    
 } else {
-  obsv_modis_mod <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod.rds"))
-  obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd.rds"))
+  obsv_mod <- readRDS(file = paste0(path_results, "mod_gpm.rds"))
+  obsv_myd <- readRDS(file = paste0(path_results, "myd_gpm.rds"))
 }
 
 
@@ -98,9 +98,9 @@ if(compute){
   for(sensor in modis_sensors){
     
     if(sensor == "mod"){
-      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod.rds"))
+      obsv_modis <- readRDS(file = paste0(path_results, "mod_gpm.rds"))
     } else {
-      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd.rds"))
+      obsv_modis <- readRDS(file = paste0(path_results, "myd_gpm.rds"))
     }
 
     obsv_modis <- minimumOccurence(x = obsv_modis,
@@ -112,8 +112,8 @@ if(compute){
     saveRDS(obsv_modis, file = paste0(path_results, "obsv_modis_gpm_", sensor, "_minimumOccurence.rds"))
   }
   } else {
-    obsv_modis_mod <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod_minimumOccurence.rds"))
-    obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_minimumOccurence.rds"))
+    obsv_mod <- readRDS(file = paste0(path_results, "mod_gpm_minimumOccurence.rds"))
+    obsv_myd <- readRDS(file = paste0(path_results, "myd_gpm_minimumOccurence.rds"))
 }
 
 
@@ -124,9 +124,9 @@ if(compute){
   for(sensor in modis_sensors){
     
     if(sensor == "mod"){
-      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod_minimumOccurence.rds"))
+      obsv_modis <- readRDS(file = paste0(path_results, "mod_gpm_minimumOccurence.rds"))
     } else {
-      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_minimumOccurence.rds"))
+      obsv_modis <- readRDS(file = paste0(path_results, "myd_gpm_minimumOccurence.rds"))
     }
     
     obsv_modis <- cleanPredictors(x = obsv_modis, nzv = TRUE, 
@@ -155,8 +155,8 @@ if(compute){
     saveRDS(obsv_modis, file = paste0(path_results, "obsv_modis_gpm_", sensor, "_cleanPredictors.rds"))
   }
 } else {
-  obsv_modis_mod <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod_cleanPredictors.rds"))
-  obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_cleanPredictors.rds"))
+  obsv_mod <- readRDS(file = paste0(path_results, "mod_gpm_cleanPredictors.rds"))
+  obsv_myd <- readRDS(file = paste0(path_results, "myd_gpm_cleanPredictors.rds"))
 }
 
 # Compile model training and evaluation dataset --------------------------------
@@ -166,9 +166,9 @@ if(compute){
   for(sensor in modis_sensors){
     
     if(sensor == "mod"){
-      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod_cleanPredictors.rds"))
+      obsv_modis <- readRDS(file = paste0(path_results, "mod_gpm_cleanPredictors.rds"))
     } else {
-      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_cleanPredictors.rds"))
+      obsv_modis <- readRDS(file = paste0(path_results, "myd_gpm_cleanPredictors.rds"))
     }
 
     # Compute resamples
@@ -186,6 +186,6 @@ if(compute){
   }
   
 } else {
-  obsv_modis_mod <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod_traintest.rds"))
-  obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_traintest.rds"))
+  obsv_mod <- readRDS(file = paste0(path_results, "mod_gpm_traintest.rds"))
+  obsv_myd <- readRDS(file = paste0(path_results, "myd_gpm_traintest.rds"))
 }

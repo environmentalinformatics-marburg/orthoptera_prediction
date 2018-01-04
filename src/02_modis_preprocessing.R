@@ -214,11 +214,11 @@ if(compute){
   modis_pca_glcm_txt <- readRDS(file = paste0(path_results, "modis_", sensor, "_pca_glcm_txt_", prj, ".rds"))
   modis_ndvi_glcm_txt <- readRDS(file = paste0(path_results, "modis_", sensor, "_ndvi_glcm_txt_", prj, ".rds"))
   
-  # modis_mod_wgs <- readRDS(file = paste0(path_results, "modis_mod_wgs.rds"))
-  modis_mod_arc <- readRDS(file = paste0(path_results, "modis_mod_arc.rds"))
+  # mod_wgs <- readRDS(file = paste0(path_results, "mod_wgs.rds"))
+  mod_arc <- readRDS(file = paste0(path_results, "mod_arc.rds"))
   
-  # modis_myd_wgs <- readRDS(file = paste0(path_results, "modis_myd_wgs.rds"))
-  modis_myd_arc <- readRDS(file = paste0(path_results, "modis_myd_arc.rds"))
+  # myd_wgs <- readRDS(file = paste0(path_results, "myd_wgs.rds"))
+  myd_arc <- readRDS(file = paste0(path_results, "myd_arc.rds"))
 }
 
 

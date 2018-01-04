@@ -12,7 +12,7 @@ compute <- TRUE
 # Predict dataset --------------------------------------------------------------
 if(compute){
 
-  obsv_gpm <- readRDS(file = paste0(path_results, "obsv_gls_gpm_traintest.rds"))
+  obsv_gpm <- readRDS(file = paste0(path_results, "gls_2000_gpm_traintest.rds"))
   
   n_var <- c(seq(1, 29), seq(40, length(obsv_gpm@meta$input$PREDICTOR_FINAL), 40))
   
@@ -27,10 +27,10 @@ if(compute){
                          cv_nbr = 5,
                          var_selection = "indv", 
                          filepath_tmp = path_temp)
-  saveRDS(obsv_gpm, file = paste0(path_results, "obsv_gls_gpm_trainmodel.rds"))
+  saveRDS(obsv_gpm, file = paste0(path_results, "gls_2000_gpm_trainmodel.rds"))
   
 } else {
-  obsv_gpm <- readRDS(file = paste0(path_results, "obsv_gls_gpm_trainmodel.rds"))
+  obsv_gpm <- readRDS(file = paste0(path_results, "gls_2000_gpm_trainmodel.rds"))
 }
 
 var_imp <- compVarImp(obsv_gpm@model$rf_rfe, scale = FALSE)
