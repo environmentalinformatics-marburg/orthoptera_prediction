@@ -17,33 +17,33 @@ if(compute){
   obsv_shp <- spTransform(obsv_shp, crs(gls))
   
   # Create one raster tile for each observation plot
-  gls_2000_snip <- snipRaster(raster=gls, spatial=obsv_shp, selector = "plot",
+  gls_snip <- snipRaster(raster=gls, spatial=obsv_shp, selector = "plot",
                          buffer=500, byid = TRUE)
-  saveRDS(gls_2000_snip, file = paste0(path_results, "gls_2000_snip_arc.rds"))
+  saveRDS(gls_snip, file = paste0(path_results, "gls_snip_arc.rds"))
   
   # Compute pca for all plots
-  gls_2000_pca <- pca(gls_2000_snip, center = TRUE, scale = TRUE)
-  saveRDS(gls_2000_pca, file = paste0(path_results, "gls_2000_pca_arc.rds"))
+  gls_pca <- pca(gls_snip, center = TRUE, scale = TRUE)
+  saveRDS(gls_pca, file = paste0(path_results, "gls_pca_arc.rds"))
   
   # Compute spectral indices for all plots
-  gls_mspec_indices <- lapply(seq(length(gls_2000_snip)), function(i){
+  gls_mspec_indices <- lapply(seq(length(gls_snip)), function(i){
     if(i %% 10 == 0) print(paste0(i))
-    mSpecIndices(blue = gls_2000_snip[[i]][[1]], green = gls_2000_snip[[i]][[2]], 
-                 red = gls_2000_snip[[i]][[3]], nir = gls_2000_snip[[i]][[4]])
+    mSpecIndices(blue = gls_snip[[i]][[1]], green = gls_snip[[i]][[2]], 
+                 red = gls_snip[[i]][[3]], nir = gls_snip[[i]][[4]])
   })  
-  names(gls_mspec_indices) <- names(gls_2000_snip)
-  saveRDS(gls_mspec_indices, file = paste0(path_results, "gls_2000_mspec_indices_arc.rds"))
+  names(gls_mspec_indices) <- names(gls_snip)
+  saveRDS(gls_mspec_indices, file = paste0(path_results, "gls_mspec_indices_arc.rds"))
   
   # Compute Haralick textures for all plots based on PCA
   windows <- seq(1, 25, 2)
 
-  minv <- min(unlist(lapply(gls_2000_pca, function(s){minValue(s$PC1)})))
-  maxv <- max(unlist(lapply(gls_2000_pca, function(s){maxValue(s$PC1)})))
+  minv <- min(unlist(lapply(gls_pca, function(s){minValue(s$PC1)})))
+  maxv <- max(unlist(lapply(gls_pca, function(s){maxValue(s$PC1)})))
   
-  gls_2000_pca_otb_txt <- lapply(seq(length(gls_2000_pca)), function(i){
+  gls_pca_otb_txt <- lapply(seq(length(gls_pca)), function(i){
     if(i %% 10 == 0) print(paste0(i))
     otb_txt_w <- lapply(windows, function(w){
-      oth <- otbTexturesHaralick(x=gls_2000_pca[[i]]$PC1, path_output = path_temp, 
+      oth <- otbTexturesHaralick(x=gls_pca[[i]]$PC1, path_output = path_temp, 
                                  return_raster = TRUE, 
                                  parameters.xyrad=list(c(w,w)),
                                  parameters.xyoff=list(c(1,1)),
@@ -56,14 +56,14 @@ if(compute){
     })
     return(otb_txt_w)
   })
-  saveRDS(gls_2000_pca_otb_txt, file = paste0(path_results, "gls_2000_pca_otb_txt_arc_bu.rds"))
-  names(gls_2000_pca_otb_txt) <- names(gls_2000_snip)
-  saveRDS(gls_2000_pca_otb_txt, file = paste0(path_results, "gls_2000_pca_otb_txt_arc_new.rds"))
+  saveRDS(gls_pca_otb_txt, file = paste0(path_results, "gls_pca_otb_txt_arc_bu.rds"))
+  names(gls_pca_otb_txt) <- names(gls_snip)
+  saveRDS(gls_pca_otb_txt, file = paste0(path_results, "gls_pca_otb_txt_arc_new.rds"))
   
   # Compute Haralick textures for all plots based on NDVI
   minv <- -1
   maxv <- 1
-  gls_2000_ndvi_otb_txt <- lapply(seq(length(gls_mspec_indices)), function(i){
+  gls_ndvi_otb_txt <- lapply(seq(length(gls_mspec_indices)), function(i){
     if(i %% 10 == 0) print(paste0(i))
     otb_txt_w <- lapply(windows, function(w){
       oth <- otbTexturesHaralick(x=gls_mspec_indices[[i]]$NDVI, path_output = path_temp, 
@@ -79,25 +79,25 @@ if(compute){
     })
     return(otb_txt_w)
   })
-  names(gls_2000_ndvi_otb_txt) <- names(gls_2000_snip)
-  saveRDS(gls_2000_ndvi_otb_txt, file = paste0(path_results, "gls_2000_ndvi_otb_txt_arc.rds"))
+  names(gls_ndvi_otb_txt) <- names(gls_snip)
+  saveRDS(gls_ndvi_otb_txt, file = paste0(path_results, "gls_ndvi_otb_txt_arc.rds"))
   
   # Compute glcm textures for all plots based on PCA
-  gls_2000_pca_glcm_txt <- lapply(seq(length(gls_2000_pca)), function(i){
+  gls_pca_glcm_txt <- lapply(seq(length(gls_pca)), function(i){
     if(i %% 10 == 0) print(paste0(i))
     gt_w <- lapply(windows, function(w){
-      gt <- glcm(gls_2000_pca[[i]]$PC1, n_grey = 32, window = c(w,w),
+      gt <- glcm(gls_pca[[i]]$PC1, n_grey = 32, window = c(w,w),
                  shift=list(c(0,1), c(1,1), c(1,0), c(1,-1)))
       names(gt) <- paste0("pca_", names(gt), ".r", w)
       return(gt)
     })
     return(gt_w)
   })  
-  names(gls_2000_pca_glcm_txt) <- names(gls_2000_snip)
-  saveRDS(gls_2000_pca_glcm_txt, file = paste0(path_results, "gls_2000_pca_glcm_txt_arc.rds"))
+  names(gls_pca_glcm_txt) <- names(gls_snip)
+  saveRDS(gls_pca_glcm_txt, file = paste0(path_results, "gls_pca_glcm_txt_arc.rds"))
   
   # Compute glcm textures for all plots based on NDVI
-  gls_2000_ndvi_glcm_txt <- lapply(seq(length(gls_mspec_indices)), function(i){
+  gls_ndvi_glcm_txt <- lapply(seq(length(gls_mspec_indices)), function(i){
     if(i %% 10 == 0) print(paste0(i))
     gt_w <- lapply(windows, function(w){
       gt <- glcm(gls_mspec_indices[[i]]$NDVI, n_grey = 32, window = c(3,3),
@@ -107,26 +107,26 @@ if(compute){
     })
     return(gt_w)
   })  
-  names(gls_2000_ndvi_glcm_txt) <- names(gls_2000_snip)
-  saveRDS(gls_2000_ndvi_glcm_txt, file = paste0(path_results, "gls_2000_ndvi_glcm_txt_arc.rds"))
+  names(gls_ndvi_glcm_txt) <- names(gls_snip)
+  saveRDS(gls_ndvi_glcm_txt, file = paste0(path_results, "gls_ndvi_glcm_txt_arc.rds"))
   
   # Combine results in one stack per tile
-  gls_2000 <- lapply(seq(length(gls_2000_snip)), function(i){
-    stack(gls_2000_snip[[i]], gls_2000_pca[[i]], gls_mspec_indices[[i]],
-          stack(gls_2000_pca_otb_txt[[i]]), stack(gls_2000_ndvi_otb_txt[[i]]),
-          stack(gls_2000_pca_glcm_txt[[i]]), stack(gls_2000_ndvi_glcm_txt[[i]]))
+  gls_2000 <- lapply(seq(length(gls_snip)), function(i){
+    stack(gls_snip[[i]], gls_pca[[i]], gls_mspec_indices[[i]],
+          stack(gls_pca_otb_txt[[i]]), stack(gls_ndvi_otb_txt[[i]]),
+          stack(gls_pca_glcm_txt[[i]]), stack(gls_ndvi_glcm_txt[[i]]))
   })
-  names(gls_2000) <- names(gls_2000_snip)
+  names(gls_2000) <- names(gls_snip)
   saveRDS(gls_2000, file = paste0(path_results, "gls_2000_arc.rds"))
   
   
 } else {
-  gls_2000_snip <- readRDS(file = paste0(path_results, "gls_2000_snip_arc.rds"))
-  gls_2000_pca <- readRDS(file = paste0(path_results, "gls_2000_pca_arc.rds"))
-  gls_mspec_indices <- readRDS(file = paste0(path_results, "gls_2000_mspec_indices_arc.rds"))
-  gls_2000_pca_otb_txt <- readRDS(file = paste0(path_results, "gls_2000_pca_otb_txt_arc.rds"))
-  gls_2000_ndvi_otb_txt <- readRDS(file = paste0(path_results, "gls_2000_ndvi_otb_txt_arc.rds"))
-  gls_2000_pca_glcm_txt <- readRDS(file = paste0(path_results, "gls_2000_pca_glcm_txt_arc.rds"))
-  gls_2000_ndvi_glcm_txt <- readRDS(file = paste0(path_results, "gls_2000_ndvi_glcm_txt_arc.rds"))
+  gls_snip <- readRDS(file = paste0(path_results, "gls_snip_arc.rds"))
+  gls_pca <- readRDS(file = paste0(path_results, "gls_pca_arc.rds"))
+  gls_mspec_indices <- readRDS(file = paste0(path_results, "gls_mspec_indices_arc.rds"))
+  gls_pca_otb_txt <- readRDS(file = paste0(path_results, "gls_pca_otb_txt_arc.rds"))
+  gls_ndvi_otb_txt <- readRDS(file = paste0(path_results, "gls_ndvi_otb_txt_arc.rds"))
+  gls_pca_glcm_txt <- readRDS(file = paste0(path_results, "gls_pca_glcm_txt_arc.rds"))
+  gls_ndvi_glcm_txt <- readRDS(file = paste0(path_results, "gls_ndvi_glcm_txt_arc.rds"))
   gls_2000 <- readRDS(file = paste0(path_results, "gls_2000_arc.rds"))
 }

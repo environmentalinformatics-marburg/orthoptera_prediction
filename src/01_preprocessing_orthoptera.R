@@ -24,10 +24,10 @@ str(obsv_ch[, c("plot", "date", "coordN", "coordW")])
 obsv <- merge(obsv_yt, obsv_ch, by = c("plot", "date", "coordN", "coordW",
                                        "elevation", "rich.plants", "rainfall"))
 
-# obsv_shp_wgs <- obsv
-# coordinates(obsv_shp_wgs) <- ~coordW+coordN
-# projection(obsv_shp_wgs) <- CRS("+init=epsg:32737")
-# saveRDS(obsv_shp_wgs, file = paste0(path_results, "obsv_shp_wgs.rds"))
+obsv_shp_wgs <- obsv
+coordinates(obsv_shp_wgs) <- ~coordW+coordN
+projection(obsv_shp_wgs) <- CRS("+init=epsg:32737")
+saveRDS(obsv_shp_wgs, file = paste0(path_results, "obsv_shp_wgs.rds"))
 
 obsv_shp_arc <- obsv
 coordinates(obsv_shp_arc) <- ~coordW+coordN

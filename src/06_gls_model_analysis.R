@@ -10,7 +10,7 @@ if(Sys.info()["sysname"] == "Windows"){
 compute <- TRUE
 
 # Read gpm model ---------------------------------------------------------------
-obsv_gpm <- readRDS(file = paste0(path_results, "gls_2000_gpm_trainmodel.rds"))
+obsv_gpm <- readRDS(file = paste0(path_results, "obsv_gls_gpm_trainmodel.rds"))
 
 tstat_gpm <- compContTests(obsv_gpm@model$rf_rfe, mean = TRUE)
 tstat_gpm_mean <- tstat_gpm[[1]]

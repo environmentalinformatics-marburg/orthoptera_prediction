@@ -55,19 +55,6 @@ if(compute){
     for(i in col_species){
       obsv_gls[, i] <- as.factor(obsv_gls[, i])
     }
-    
-    rm_pred = lapply(col_precitors, function(i){
-      if(any(is.na(obsv_gls[, i]))){
-        rm = i
-      } else {
-        rm = NULL
-      }
-      return(rm)
-    })
-    rm_pred = unlist(rm_pred)
-    colnames(obsv_gls)[rm_pred]
-    col_precitors = col_precitors[-which(col_precitors %in% rm_pred)]
-
     meta <- createGPMMeta(obsv_gls, type = "input",
                           selector = col_selector, 
                           response = col_species, 
@@ -79,9 +66,9 @@ if(compute){
   }
 
 
-  saveRDS(obsv_gls, file = paste0(path_results, "gls_2000_gpm.rds"))
+  saveRDS(obsv_gls, file = paste0(path_results, "obsv_gls_gpm.rds"))
 } else {
-  obsv_gls <- readRDS(file = paste0(path_results, "gls_2000_gpm.rds"))
+  obsv_gls <- readRDS(file = paste0(path_results, "obsv_gls_gpm.rds"))
 }
 
 
@@ -91,83 +78,47 @@ if(compute){
                                occurence = "yes", 
                                resample = 100, 
                                thv = 25)
-  saveRDS(obsv_gls, file = paste0(path_results, "gls_2000_gpm_minimumOccurence_not_adjusted.rds"))
-  
-  # Adjust responses to match MODIS
-  obsv_mod <- readRDS(file = paste0(path_results, "mod_gpm_traintest.rds"))
-  
-  match = which(obsv_gls@meta$input$RESPONSE_FINAL %in% obsv_mod@meta$input$RESPONSE_FINAL)
-  if(length(match) == length(obsv_mod@meta$input$RESPONSE_FINAL)){
-    obsv_gls@meta$input$RESPONSE_FINAL = obsv_mod@meta$input$RESPONSE_FINAL
-  }
-  saveRDS(obsv_gls, file = paste0(path_results, "gls_2000_gpm_minimumOccurence.rds"))
-  
-  
+  saveRDS(obsv_gls, file = paste0(path_results, "obsv_gls_gpm_minimumOccurence.rds"))
 } else {
-  obsv_gls <- readRDS(file = paste0(path_results, "gls_2000_gpm_minimumOccurence.rds"))
+  obsv_gls <- readRDS(file = paste0(path_results, "obsv_gls_gpm_minimumOccurence.rds"))
 }
 
 
 # Clean predictor variables ----------------------------------------------------
 if(compute){
   # Remove highly correlated or near zero variance predictors
-  sel = c(grep(glob2rx("pca*b1r1o1m*mean"), 
-             obsv_gls@meta$input$PREDICTOR, value = TRUE),
-          grep(glob2rx("pca*b1r1o1m*sd"), 
-               obsv_gls@meta$input$PREDICTOR, value = TRUE),
-          grep(glob2rx("pca*b1r3o1m*mean"), 
-               obsv_gls@meta$input$PREDICTOR, value = TRUE),
-          grep(glob2rx("pca*b1r3o1m*sd"), 
-               obsv_gls@meta$input$PREDICTOR, value = TRUE),
-          grep(glob2rx("pca*b1r5o1m*mean"), 
-               obsv_gls@meta$input$PREDICTOR, value = TRUE),
-          grep(glob2rx("pca*b1r5o1m*sd"), 
-               obsv_gls@meta$input$PREDICTOR, value = TRUE))
-  # sel =
-  #   c("gls2000.1_mean", "gls2000.2_mean", "gls2000.3_mean", "gls2000.4_mean",
-  #     "gls2000.5_mean", "gls2000.6_mean", "NDVI_mean", "GNDVI_mean", "SR_mean",
-  #     sel)
-
-  obsv_gls@meta$input$PREDICTOR_FINAL =  sel
-  
   obsv_gls <- cleanPredictors(x = obsv_gls, nzv = TRUE, 
-                              highcor = TRUE, cutoff = 0.80,
+                              highcor = TRUE, cutoff = 0.75,
                               rmvna = TRUE)
-  obsv_gls@meta$input$PREDICTOR_FINAL =    
-    c("gls2000.1_mean", "gls2000.2_mean", "gls2000.3_mean", "gls2000.4_mean",
-      "gls2000.5_mean", "gls2000.6_mean", "NDVI_mean", "GNDVI_mean", "SR_mean",
-      obsv_gls@meta$input$PREDICTOR_FINAL)
-
-  obsv_gls@meta$input$PREDICTOR_FINAL
-  # Commented out on 2018-06-01
+  
   # Get some predictors back even if removed:
   # - all original bands
   # - all PCA band
   # - all VI bands
   # - all predictors computed with a windows radius of 1 back on track
-  # org_pca_vi_bands <- obsv_gls@meta$input$PREDICTOR[1:15][
-  #   which(!(obsv_gls@meta$input$PREDICTOR[1:15] %in% obsv_gls@meta$input$PREDICTOR_FINAL))]
-  # obsv_gls@meta$input$PREDICTOR_FINAL <- c(obsv_gls@meta$input$PREDICTOR_FINAL, org_pca_vi_bands)
-  # 
-  # r1 <- obsv_gls@meta$input$PREDICTOR[grep("r1_|r1o", obsv_gls@meta$input$PREDICTOR)]
-  # r1 <- r1[which(!(r1 %in% obsv_gls@meta$input$PREDICTOR_FINAL))]
-  # 
-  # obsv_gls@meta$input$PREDICTOR_FINAL <- c(obsv_gls@meta$input$PREDICTOR_FINAL, r1)
+  org_pca_vi_bands <- obsv_gls@meta$input$PREDICTOR[1:15][
+    which(!(obsv_gls@meta$input$PREDICTOR[1:15] %in% obsv_gls@meta$input$PREDICTOR_FINAL))]
+  obsv_gls@meta$input$PREDICTOR_FINAL <- c(obsv_gls@meta$input$PREDICTOR_FINAL, org_pca_vi_bands)
+  
+  r1 <- obsv_gls@meta$input$PREDICTOR[grep("r1_|r1o", obsv_gls@meta$input$PREDICTOR)]
+  r1 <- r1[which(!(r1 %in% obsv_gls@meta$input$PREDICTOR_FINAL))]
+  
+  obsv_gls@meta$input$PREDICTOR_FINAL <- c(obsv_gls@meta$input$PREDICTOR_FINAL, r1)
   
   # Remove all additionally added predictors including NAs
-  # na_check <- colSums(is.na(obsv_gls@data$input[, obsv_gls@meta$input$PREDICTOR_FINAL]))
-  # narm <- which(obsv_gls@meta$input$PREDICTOR_FINAL %in%  names(na_check[na_check>0]))
-  # obsv_gls@meta$input$PREDICTOR_FINAL <- obsv_gls@meta$input$PREDICTOR_FINAL[-narm]
+  na_check <- colSums(is.na(obsv_gls@data$input[, obsv_gls@meta$input$PREDICTOR_FINAL]))
+  narm <- which(obsv_gls@meta$input$PREDICTOR_FINAL %in%  names(na_check[na_check>0]))
+  obsv_gls@meta$input$PREDICTOR_FINAL <- obsv_gls@meta$input$PREDICTOR_FINAL[-narm]
 
-  saveRDS(obsv_gls, file = paste0(path_results, "gls_2000_gpm_cleanPredictors.rds"))
+  saveRDS(obsv_gls, file = paste0(path_results, "obsv_gls_gpm_cleanPredictors.rds"))
 } else {
-  obsv_gls <- readRDS(file = paste0(path_results, "gls_2000_gpm_cleanPredictors.rds"))
+  obsv_gls <- readRDS(file = paste0(path_results, "obsv_gls_gpm_cleanPredictors.rds"))
 }
 
 
 # Compile model training and evaluation dataset --------------------------------
 if(compute){
-  # Compute resamples
+    # Compute resamples
   obsv_gls <- resamplingsByVariable(x = obsv_gls,
                                     use_selector = TRUE,
                                     grabs = 1,
@@ -177,7 +128,7 @@ if(compute){
   obsv_gls <- splitMultResp(x = obsv_gls, 
                             p = 0.85, 
                             use_selector = FALSE)
-  saveRDS(obsv_gls, file = paste0(path_results, "gls_2000_gpm_traintest.rds"))
+  saveRDS(obsv_gls, file = paste0(path_results, "obsv_gls_gpm_traintest.rds"))
 } else {
-  obsv_gls <- readRDS(file = paste0(path_results, "gls_2000_gpm_traintest.rds"))
+  obsv_gls <- readRDS(file = paste0(path_results, "obsv_gls_gpm_traintest.rds"))
 }
