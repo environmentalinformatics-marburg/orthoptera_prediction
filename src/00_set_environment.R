@@ -1,7 +1,6 @@
 # Set path ---------------------------------------------------------------------
 if(Sys.info()["sysname"] == "Windows"){
-  path_base <- "E:/tnauss/orthoptera/"
-  path_base <- "E:/analysis/orthoptera/"
+  path_base <- "D:/orthoptera/"
 } else {
   path_base <- "/media/tnauss/myWork/analysis/orthoptera/"
 }

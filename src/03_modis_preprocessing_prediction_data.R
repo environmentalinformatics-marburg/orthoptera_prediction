@@ -2,7 +2,7 @@
 # Thomas Nauss
 
 if(Sys.info()["sysname"] == "Windows"){
-  source("F:/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
+  source("D:/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 } else {
   source("/media/tnauss/myWork/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 }
@@ -18,9 +18,9 @@ if(compute){
   for(sensor in modis_sensors){
     
     if(sensor == "mod"){
-      modis <- readRDS(file = paste0(path_results, "modis_mod_arc.rds"))
+      modis <- readRDS(file = paste0(path_results, "mod_arc.rds"))
     } else {
-      modis <- readRDS(file = paste0(path_results, "modis_myd_arc.rds"))
+      modis <- readRDS(file = paste0(path_results, "myd_arc.rds"))
     }
     obsv_shp <- spTransform(obsv_shp_arc, crs(modis[[1]]))
 
@@ -29,8 +29,8 @@ if(compute){
     saveRDS(modis_plots, file = paste0(path_results, "modis_", sensor, "_plots.rds"))
   } 
 } else {
-  modis_mod_plots <- readRDS(file = paste0(path_results, "modis_mod_plots.rds"))
-  modis_myd_plots <- readRDS(file = paste0(path_results, "modis_myd_plots.rds"))
+  mod_plots <- readRDS(file = paste0(path_results, "mod_plots.rds"))
+  myd_plots <- readRDS(file = paste0(path_results, "myd_plots.rds"))
 }
   
 
@@ -41,9 +41,9 @@ if(compute){
   for(sensor in modis_sensors){
     
     if(sensor == "mod"){
-      modis_plots <- readRDS(file = paste0(path_results, "modis_mod_plots.rds"))
+      modis_plots <- readRDS(file = paste0(path_results, "mod_plots.rds"))
     } else {
-      modis_plots <- readRDS(file = paste0(path_results, "modis_myd_plots.rds"))
+      modis_plots <- readRDS(file = paste0(path_results, "myd_plots.rds"))
     }
     obsv_modis <- as.data.frame(modis_plots)
       col_selector <- which(names(obsv_modis) == "plot")
@@ -84,11 +84,11 @@ if(compute){
         obsv_modis <- NULL
       }
 
-    saveRDS(obsv_modis, file = paste0(path_results, "obsv_modis_gpm_", sensor, ".rds"))
+    saveRDS(obsv_modis, file = paste0(path_results, "obsv_gpm_", sensor, ".rds"))
   }    
 } else {
-  obsv_modis_mod <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod.rds"))
-  obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd.rds"))
+  obsv_mod <- readRDS(file = paste0(path_results, "obsv_gpm_mod.rds"))
+  obsv_myd <- readRDS(file = paste0(path_results, "obsv_gpm_myd.rds"))
 }
 
 
@@ -98,9 +98,9 @@ if(compute){
   for(sensor in modis_sensors){
     
     if(sensor == "mod"){
-      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod.rds"))
+      obsv_modis <- readRDS(file = paste0(path_results, "obsv_gpm_mod.rds"))
     } else {
-      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd.rds"))
+      obsv_modis <- readRDS(file = paste0(path_results, "obsv_gpm_myd.rds"))
     }
 
     obsv_modis <- minimumOccurence(x = obsv_modis,
@@ -109,11 +109,11 @@ if(compute){
                                thv = 25)
     obsv_modis@meta$input$RESPONSE <- obsv_modis@meta$input$MIN_OCCURENCE$names
 
-    saveRDS(obsv_modis, file = paste0(path_results, "obsv_modis_gpm_", sensor, "_minimumOccurence.rds"))
+    saveRDS(obsv_modis, file = paste0(path_results, "obsv_gpm_", sensor, "_minimumOccurence.rds"))
   }
   } else {
-    obsv_modis_mod <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod_minimumOccurence.rds"))
-    obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_minimumOccurence.rds"))
+    obsv_mod <- readRDS(file = paste0(path_results, "obsv_gpm_mod_minimumOccurence.rds"))
+    obsv_myd <- readRDS(file = paste0(path_results, "obsv_gpm_myd_minimumOccurence.rds"))
 }
 
 
@@ -124,9 +124,9 @@ if(compute){
   for(sensor in modis_sensors){
     
     if(sensor == "mod"){
-      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod_minimumOccurence.rds"))
+      obsv_modis <- readRDS(file = paste0(path_results, "obsv_gpm_mod_minimumOccurence.rds"))
     } else {
-      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_minimumOccurence.rds"))
+      obsv_modis <- readRDS(file = paste0(path_results, "obsv_gpm_myd_minimumOccurence.rds"))
     }
     
     obsv_modis <- cleanPredictors(x = obsv_modis, nzv = TRUE, 
@@ -152,11 +152,11 @@ if(compute){
     narm <- which(obsv_modis@meta$input$PREDICTOR_FINAL %in%  names(na_check[na_check>0]))
     obsv_modis@meta$input$PREDICTOR_FINAL <- obsv_modis@meta$input$PREDICTOR_FINAL[-narm]
     
-    saveRDS(obsv_modis, file = paste0(path_results, "obsv_modis_gpm_", sensor, "_cleanPredictors.rds"))
+    saveRDS(obsv_modis, file = paste0(path_results, "obsv_gpm_", sensor, "_cleanPredictors.rds"))
   }
 } else {
-  obsv_modis_mod <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod_cleanPredictors.rds"))
-  obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_cleanPredictors.rds"))
+  obsv_mod <- readRDS(file = paste0(path_results, "obsv_gpm_mod_cleanPredictors.rds"))
+  obsv_myd <- readRDS(file = paste0(path_results, "obsv_gpm_myd_cleanPredictors.rds"))
 }
 
 # Compile model training and evaluation dataset --------------------------------
@@ -166,9 +166,9 @@ if(compute){
   for(sensor in modis_sensors){
     
     if(sensor == "mod"){
-      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod_cleanPredictors.rds"))
+      obsv_modis <- readRDS(file = paste0(path_results, "obsv_gpm_mod_cleanPredictors.rds"))
     } else {
-      obsv_modis <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_cleanPredictors.rds"))
+      obsv_modis <- readRDS(file = paste0(path_results, "obsv_gpm_myd_cleanPredictors.rds"))
     }
 
     # Compute resamples
@@ -182,10 +182,10 @@ if(compute){
                                 p = 0.85, 
                                 use_selector = FALSE)
       
-    saveRDS(obsv_modis, file = paste0(path_results, "obsv_modis_gpm_", sensor, "_traintest.rds"))
+    saveRDS(obsv_modis, file = paste0(path_results, "obsv_gpm_", sensor, "_traintest.rds"))
   }
   
 } else {
-  obsv_modis_mod <- readRDS(file = paste0(path_results, "obsv_modis_gpm_mod_traintest.rds"))
-  obsv_modis_myd <- readRDS(file = paste0(path_results, "obsv_modis_gpm_myd_traintest.rds"))
+  obsv_mod <- readRDS(file = paste0(path_results, "obsv_gpm_mod_traintest.rds"))
+  obsv_myd <- readRDS(file = paste0(path_results, "obsv_gpm_myd_traintest.rds"))
 }

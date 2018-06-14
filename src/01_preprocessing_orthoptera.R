@@ -2,7 +2,7 @@
 # Thomas Nauss
 
 if(Sys.info()["sysname"] == "Windows"){
-  source("F:/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
+  source("D:/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 } else {
   source("/media/tnauss/myWork/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 }

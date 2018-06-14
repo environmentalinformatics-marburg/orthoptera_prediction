@@ -2,7 +2,7 @@
 # Thomas Nauss
 
 if(Sys.info()["sysname"] == "Windows"){
-  source("F:/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
+  source("D:/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 } else {
   source("/media/tnauss/myWork/analysis/orthoptera/orthoptera_prediction/src/00_gls_set_environment.R")
 }
@@ -111,13 +111,14 @@ if(compute){
   saveRDS(gls_ndvi_glcm_txt, file = paste0(path_results, "gls_ndvi_glcm_txt_arc.rds"))
   
   # Combine results in one stack per tile
-  gls_2000 <- lapply(seq(length(gls_snip)), function(i){
+  gls <- lapply(seq(length(gls_snip)), function(i){
+    print(i)
     stack(gls_snip[[i]], gls_pca[[i]], gls_mspec_indices[[i]],
           stack(gls_pca_otb_txt[[i]]), stack(gls_ndvi_otb_txt[[i]]),
           stack(gls_pca_glcm_txt[[i]]), stack(gls_ndvi_glcm_txt[[i]]))
   })
-  names(gls_2000) <- names(gls_snip)
-  saveRDS(gls_2000, file = paste0(path_results, "gls_2000_arc.rds"))
+  names(gls) <- names(gls_snip)
+  saveRDS(gls, file = paste0(path_results, "gls_arc.rds"))
   
   
 } else {
@@ -128,5 +129,5 @@ if(compute){
   gls_ndvi_otb_txt <- readRDS(file = paste0(path_results, "gls_ndvi_otb_txt_arc.rds"))
   gls_pca_glcm_txt <- readRDS(file = paste0(path_results, "gls_pca_glcm_txt_arc.rds"))
   gls_ndvi_glcm_txt <- readRDS(file = paste0(path_results, "gls_ndvi_glcm_txt_arc.rds"))
-  gls_2000 <- readRDS(file = paste0(path_results, "gls_2000_arc.rds"))
+  gls <- readRDS(file = paste0(path_results, "gls_arc.rds"))
 }

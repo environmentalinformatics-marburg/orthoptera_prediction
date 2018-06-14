@@ -14,7 +14,7 @@ library(latticeExtra)
 
 # Set path ---------------------------------------------------------------------
 if(Sys.info()["sysname"] == "Windows"){
-  filepath_base <- "F:/analysis/orthoptera/data/"
+  filepath_base <- "D:/orthoptera/data/"
 } else {
   filepath_base <- "/media/tnauss/myWork/analysis/orthoptera/data/"
 }

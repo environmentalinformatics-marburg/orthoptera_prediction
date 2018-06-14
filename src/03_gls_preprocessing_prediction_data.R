@@ -2,7 +2,7 @@
 # Thomas Nauss
 
 if(Sys.info()["sysname"] == "Windows"){
-  source("F:/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
+  source("D:/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 } else {
   source("/media/tnauss/myWork/analysis/orthoptera/orthoptera_prediction/src/00_set_environment.R")
 }
@@ -11,22 +11,22 @@ compute <- TRUE
 
 # Merge GLS2000 data with preprocessed orthoptera observations -----------------
 if(compute){
-  gls_2000 <- readRDS(file = paste0(path_results, "gls_2000_arc.rds"))
+  gls <- readRDS(file = paste0(path_results, "gls_arc.rds"))
   
   obsv_shp <- readRDS(file = paste0(path_results, "obsv_shp_arc.rds"))
-  obsv_shp <- spTransform(obsv_shp, CRS(projection(gls_2000[[1]])))
+  obsv_shp <- spTransform(obsv_shp, CRS(projection(gls[[1]])))
 
-  gls_2000_plots <- extractFromRasterSnips(raster = gls_2000, spatial = obsv_shp, 
+  gls_plots <- extractFromRasterSnips(raster = gls, spatial = obsv_shp, 
                                            selector = "plot", buffer = 50)
-  saveRDS(gls_2000_plots, file = paste0(path_results, "gls_2000_plots.rds"))
+  saveRDS(gls_plots, file = paste0(path_results, "gls_plots.rds"))
 } else {
-  gls_2000_plots <- readRDS(file = paste0(path_results, "gls_2000_plots.rds"))
+  gls_plots <- readRDS(file = paste0(path_results, "gls_plots.rds"))
 }
 
 
 # Prepare gpm data set used for remote sensing prediction study ----------------
 if(compute){
-  obsv_gls <- as.data.frame(gls_2000_plots)
+  obsv_gls <- as.data.frame(gls_plots)
   col_selector <- which(names(obsv_gls) == "plot")
     
   col_meta <- c(seq(which(names(obsv_gls) == "date"), 
@@ -118,7 +118,11 @@ if(compute){
 
 # Compile model training and evaluation dataset --------------------------------
 if(compute){
-    # Compute resamples
+  # Compute resamples
+  
+  obsv_gpm = createIndexFolds(x = obsv_gpm, nested_cv = FALSE)
+  
+  
   obsv_gls <- resamplingsByVariable(x = obsv_gls,
                                     use_selector = TRUE,
                                     grabs = 1,
